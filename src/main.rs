@@ -1,46 +1,67 @@
-mod lib;
-use std::{env, fs, process};
+use clap::{Parser, Subcommand};
+use std::{fs, process};
 use std::path::Path;
 
-//use pose::get_services_names;
-use crate::lib::get_services_names;
+//mod lib;
+//use crate::lib::get_services_names;
+use pose::get_services_names;
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
-    let config = Config::build(&args).unwrap_or_else(|err| {
-        eprintln!("{err}");
-        process::exit(1);
-    });
-    let yaml = fs::read_to_string(&config.filename).unwrap_or_else(|err| {
-        eprintln!("Error reading file: {err}");
-        process::exit(2);
-    });
-    let map = serde_yaml::from_str(&yaml).unwrap_or_else(|err| {
-        eprintln!("Error parsing YAML file: {err}");
-        process::exit(3);
-    });
-    get_services_names(&map).iter().for_each(|service| println!("{}", service));
+    let args = Args::parse();
+    match args.command {
+        Commands::List { filename } => {
+            let filename = get_compose_filename(&filename).unwrap_or_else(|err| {
+                eprintln!("{err}");
+                process::exit(10);
+            });
+            let yaml = fs::read_to_string(&filename).unwrap_or_else(|err| {
+                eprintln!("Error reading file: {err}");
+                process::exit(11);
+            });
+            let map = serde_yaml::from_str(&yaml).unwrap_or_else(|err| {
+                if err.to_string().starts_with("invalid type") {
+                    eprintln!("Error parsing YAML file: invalid file");
+                    process::exit(13);
+                }
+                eprintln!("Error parsing YAML file: {err}");
+                process::exit(14);
+            });
+            get_services_names(&map).iter().for_each(|service| println!("{}", service));
+        },
+    }
 }
 
-struct Config {
-    filename: String,
+
+#[derive(Parser)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+
+    #[command(subcommand)]
+    command: Commands,
 }
 
-impl Config {
-    fn build(args: &[String]) -> Result<Config, &'static str> {
-        let filename = if args.len() <= 1 {
+#[derive(Subcommand)]
+enum Commands {
+    List {
+        #[arg(short, long)]
+        filename: Option<String>,
+    },
+    //TODO more coming soon...
+}
+
+fn get_compose_filename(filename: &Option<String>) -> Result<String, &str> {
+    let name = match filename {
+        Some(name) => name,
+        None =>
             if Path::new("docker-compose.yaml").exists() {
                 "docker-compose.yaml"
             } else {
                 "docker-compose.yml"
             }
-        } else {
-            &args[1]
-        };
-        if Path::new(&filename).exists() {
-            Ok(Config { filename: String::from(filename) })
-        } else {
-            Err("No such file")
-        }
+    };
+    if Path::new(&name).exists() {
+        Ok(String::from(name))
+    } else {
+        Err("No such file")
     }
 }
