@@ -1,3 +1,5 @@
+//! `pose` is a command line tool to play with 🐳 Docker Compose files.
+
 use clap::{Parser, Subcommand, ValueEnum};
 use std::{fs, process};
 use strum_macros;
@@ -51,6 +53,7 @@ struct Args {
 
 #[derive(Subcommand)]
 enum Commands {
+    /// List objects found in the compose file: services, volumes, ...
     List {
         #[command(subcommand)]
         object: Objects,
@@ -66,10 +69,15 @@ enum Commands {
 
 #[derive(Subcommand, strum_macros::Display)]
 enum Objects {
+    /// List services
     Services,
+    /// List volumes
     Volumes,
+    /// List networks
     Networks,
+    /// List configs
     Configs,
+    /// List secrets
     Secrets,
 }
 

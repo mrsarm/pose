@@ -2,6 +2,13 @@
 name = "pose"
 version = "0.1.0"
 edition = "2021"
+authors = ["Mariano Ruiz <mrsarm@gmail.com>"]
+description = "Command line tool to play with 🐳 Docker Compose files."
+license = "GPL-3.0"
+readme = "README.md"
+homepage = "https://github.com/mrsarm/pose"
+repository = "https://github.com/mrsarm/pose"
+categories = ["docker"]
 
 [dependencies]
 clap = { version = "4.0.23", features = ["derive"] }
