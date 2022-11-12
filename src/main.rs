@@ -1,11 +1,10 @@
 use clap::{Parser, Subcommand, ValueEnum};
 use std::{fs, process};
-use std::path::Path;
 use strum_macros;
 
 //mod lib;
-//use crate::lib::ComposeYaml;
-use pose::ComposeYaml;
+//use crate::lib::{ComposeYaml, get_compose_filename};
+use pose::{ComposeYaml, get_compose_filename};
 
 fn main() {
     let args = Args::parse();
@@ -78,25 +77,4 @@ enum Objects {
 enum Formats {
     FULL,
     ONELINE,
-}
-
-fn get_compose_filename(filename: &Option<String>) -> Result<String, &str> {
-    let name = match filename {
-        Some(name) => name,
-        None =>
-            if Path::new("compose.yaml").exists() {
-                "compose.yaml"
-            } else if Path::new("compose.yml").exists() {
-                "compose.yml"
-            } else if Path::new("docker-compose.yaml").exists() {
-                "docker-compose.yaml"
-            } else {
-                "docker-compose.yml"
-            }
-    };
-    if Path::new(&name).exists() {
-        Ok(String::from(name))
-    } else {
-        Err("No such file")
-    }
 }

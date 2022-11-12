@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use std::path::Path;
 use serde_yaml::{Mapping, Value, Error};
 
 pub struct ComposeYaml {
@@ -22,5 +23,26 @@ impl ComposeYaml {
             Some(s) => s.keys().map(|k| k.as_str().unwrap()).collect::<Vec<_>>(),
             None => Vec::default()
         }
+    }
+}
+
+pub fn get_compose_filename(filename: &Option<String>) -> Result<String, &str> {
+    let name = match filename {
+        Some(name) => name,
+        None =>
+            if Path::new("compose.yaml").exists() {
+                "compose.yaml"
+            } else if Path::new("compose.yml").exists() {
+                "compose.yml"
+            } else if Path::new("docker-compose.yaml").exists() {
+                "docker-compose.yaml"
+            } else {
+                "docker-compose.yml"
+            }
+    };
+    if Path::new(&name).exists() {
+        Ok(String::from(name))
+    } else {
+        Err("No such file")
     }
 }
