@@ -21,8 +21,8 @@ volumes:
   - no-body-cares
     ";
     let compose = ComposeYaml::new(&yaml)?;
-    let services_map = compose.get_services().unwrap();
-    let services_names = compose.get_services_names();
+    let services_map = compose.get_root_element("services").unwrap();
+    let services_names = compose.get_root_element_names("services");
     assert_eq!(services_map.len(), services_names.len());
     assert_eq!(services_names, vec!["app", "app1", "app2"]);
     Ok(())
@@ -36,8 +36,8 @@ volumes:
   - no-body-cares
     ";
     let compose = ComposeYaml::new(&yaml)?;
-    assert!(compose.get_services().is_none());
-    assert!(compose.get_services_names().is_empty());
+    assert!(compose.get_root_element("services").is_none());
+    assert!(compose.get_root_element_names("services").is_empty());
     Ok(())
 }
 
@@ -48,7 +48,7 @@ volumes:
   - no-body-cares
     ";
     let compose = ComposeYaml::new(&yaml)?;
-    assert!(compose.get_services().is_none());
-    assert!(compose.get_services_names().is_empty());
+    assert!(compose.get_root_element("services").is_none());
+    assert!(compose.get_root_element_names("services").is_empty());
     Ok(())
 }

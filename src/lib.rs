@@ -11,14 +11,14 @@ impl ComposeYaml {
         Ok(ComposeYaml { map })
     }
 
-    pub fn get_services(&self) -> Option<&Mapping> {
-        let value = self.map.get("services");
+    pub fn get_root_element(&self, element_name: &str) -> Option<&Mapping> {
+        let value = self.map.get(element_name);
         value.map(|v| v.as_mapping()).unwrap_or_default()
     }
 
-    pub fn get_services_names(&self) -> Vec<&str> {
-        let services = self.get_services();
-        match services {
+    pub fn get_root_element_names(&self, element_name: &str) -> Vec<&str> {
+        let elements = self.get_root_element(element_name);
+        match elements {
             Some(s) => s.keys().map(|k| k.as_str().unwrap()).collect::<Vec<_>>(),
             None => Vec::default()
         }

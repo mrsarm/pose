@@ -9,7 +9,7 @@ use pose::ComposeYaml;
 fn main() {
     let args = Args::parse();
     match args.command {
-        Commands::List { filename } => {
+        Commands::List { filename, object } => {
             let filename = get_compose_filename(&filename).unwrap_or_else(|err| {
                 eprintln!("{err}");
                 process::exit(10);
@@ -26,7 +26,11 @@ fn main() {
                 eprintln!("Error parsing YAML file: {err}");
                 process::exit(14);
             });
-            compose.get_services_names().iter().for_each(|service| println!("{}", service));
+            let root_element = object.to_string().to_lowercase();
+            compose
+                .get_root_element_names(&root_element )
+                .iter()
+                .for_each(|service| println!("{}", service));
         },
     }
 }
@@ -45,8 +49,20 @@ enum Commands {
     List {
         #[arg(short, long)]
         filename: Option<String>,
+
+        #[command(subcommand)]
+        object: Objects,
     },
     //TODO more coming soon...
+}
+
+#[derive(Subcommand, strum_macros::Display)]
+enum Objects {
+    Services,
+    Volumes,
+    Networks,
+    Configs,
+    Secrets,
 }
 
 fn get_compose_filename(filename: &Option<String>) -> Result<String, &str> {
