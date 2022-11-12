@@ -1,3 +1,4 @@
+use colored::*;
 use std::collections::BTreeMap;
 use std::path::Path;
 use serde_yaml::{Mapping, Value, Error};
@@ -26,23 +27,34 @@ impl ComposeYaml {
     }
 }
 
-pub fn get_compose_filename(filename: &Option<String>) -> Result<String, &str> {
-    let name = match filename {
-        Some(name) => name,
-        None =>
-            if Path::new("compose.yaml").exists() {
-                "compose.yaml"
-            } else if Path::new("compose.yml").exists() {
-                "compose.yml"
-            } else if Path::new("docker-compose.yaml").exists() {
-                "docker-compose.yaml"
+// where to look for the compose file when the user
+// don't provide a path
+static COMPOSE_PATHS: [&str; 8] = [
+    "compose.yaml", "compose.yml",
+    "docker-compose.yaml", "docker-compose.yml",
+    "docker/compose.yaml", "docker/compose.yml",
+    "docker/docker-compose.yaml", "docker/docker-compose.yml",
+];
+
+pub fn get_compose_filename(filename: &Option<String>) -> Result<String, String> {
+    match filename {
+        Some(name) =>
+            if Path::new(&name).exists() {
+                Ok(String::from(name))
             } else {
-                "docker-compose.yml"
-            }
-    };
-    if Path::new(&name).exists() {
-        Ok(String::from(name))
-    } else {
-        Err("No such file")
+                Err(format!("{}: No such file or directory: '{}'", "ERROR".red(), name))
+            },
+        None =>
+            COMPOSE_PATHS
+                .into_iter()
+                .filter(|f| Path::new(f).exists())
+                .map(|name| String::from(name))
+                .next()
+                .ok_or(format!(
+                    "{}: Can't find a suitable configuration file in this directory.\n\
+                     Are you in the right directory?\n\n\
+                     Supported filenames: {}",
+                    "ERROR".red(), COMPOSE_PATHS.into_iter().collect::<Vec<&str>>().join(", ")
+                )),
     }
 }
