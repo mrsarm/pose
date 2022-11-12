@@ -1,6 +1,7 @@
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, ValueEnum};
 use std::{fs, process};
 use std::path::Path;
+use strum_macros;
 
 //mod lib;
 //use crate::lib::ComposeYaml;
@@ -9,7 +10,11 @@ use pose::ComposeYaml;
 fn main() {
     let args = Args::parse();
     match args.command {
-        Commands::List { filename, object } => {
+        Commands::List {
+            filename,
+            object,
+            pretty,
+        } => {
             let filename = get_compose_filename(&filename).unwrap_or_else(|err| {
                 eprintln!("{err}");
                 process::exit(10);
@@ -27,10 +32,11 @@ fn main() {
                 process::exit(14);
             });
             let root_element = object.to_string().to_lowercase();
-            compose
-                .get_root_element_names(&root_element )
-                .iter()
-                .for_each(|service| println!("{}", service));
+            let el_iter = compose.get_root_element_names(&root_element ).into_iter();
+            match pretty {
+                Formats::FULL    => el_iter.for_each(|service| println!("{}", service)),
+                Formats::ONELINE => println!("{}", el_iter.collect::<Vec<&str>>().join(" ")),
+            }
         },
     }
 }
@@ -47,11 +53,14 @@ struct Args {
 #[derive(Subcommand)]
 enum Commands {
     List {
+        #[command(subcommand)]
+        object: Objects,
+
         #[arg(short, long)]
         filename: Option<String>,
 
-        #[command(subcommand)]
-        object: Objects,
+        #[arg(short, long, value_enum, default_value_t = Formats::FULL, value_name = "FORMAT")]
+        pretty: Formats,
     },
     //TODO more coming soon...
 }
@@ -65,11 +74,21 @@ enum Objects {
     Secrets,
 }
 
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, strum_macros::Display)]
+enum Formats {
+    FULL,
+    ONELINE,
+}
+
 fn get_compose_filename(filename: &Option<String>) -> Result<String, &str> {
     let name = match filename {
         Some(name) => name,
         None =>
-            if Path::new("docker-compose.yaml").exists() {
+            if Path::new("compose.yaml").exists() {
+                "compose.yaml"
+            } else if Path::new("compose.yml").exists() {
+                "compose.yml"
+            } else if Path::new("docker-compose.yaml").exists() {
                 "docker-compose.yaml"
             } else {
                 "docker-compose.yml"
