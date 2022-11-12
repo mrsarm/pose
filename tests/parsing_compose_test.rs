@@ -1,7 +1,8 @@
-use pose::{get_services, get_services_names};
+use pose::ComposeYaml;
+use serde_yaml::Error;
 
 #[test]
-fn get_services_list() -> Result<(), serde_yaml::Error> {
+fn get_services_list() -> Result<(), Error> {
     let yaml = "
 services:
   app: the-app
@@ -19,35 +20,35 @@ services:
 volumes:
   - no-body-cares
     ";
-    let map = serde_yaml::from_str(&yaml)?;
-    let services_map = get_services(&map).unwrap();
-    let services_names = get_services_names(&map);
+    let compose = ComposeYaml::new(&yaml)?;
+    let services_map = compose.get_services().unwrap();
+    let services_names = compose.get_services_names();
     assert_eq!(services_map.len(), services_names.len());
     assert_eq!(services_names, vec!["app", "app1", "app2"]);
     Ok(())
 }
 
 #[test]
-fn get_services_empty_list() -> Result<(), serde_yaml::Error> {
+fn get_services_empty_list() -> Result<(), Error> {
     let yaml = "
 services: []
 volumes:
   - no-body-cares
     ";
-    let map = serde_yaml::from_str(&yaml)?;
-    assert!(get_services(&map).is_none());
-    assert!(get_services_names(&map).is_empty());
+    let compose = ComposeYaml::new(&yaml)?;
+    assert!(compose.get_services().is_none());
+    assert!(compose.get_services_names().is_empty());
     Ok(())
 }
 
 #[test]
-fn get_services_no_list() -> Result<(), serde_yaml::Error> {
+fn get_services_no_list() -> Result<(), Error> {
     let yaml = "
 volumes:
   - no-body-cares
     ";
-    let map = serde_yaml::from_str(&yaml)?;
-    assert!(get_services(&map).is_none());
-    assert!(get_services_names(&map).is_empty());
+    let compose = ComposeYaml::new(&yaml)?;
+    assert!(compose.get_services().is_none());
+    assert!(compose.get_services_names().is_empty());
     Ok(())
 }

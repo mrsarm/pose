@@ -3,8 +3,8 @@ use std::{fs, process};
 use std::path::Path;
 
 //mod lib;
-//use crate::lib::get_services_names;
-use pose::get_services_names;
+//use crate::lib::ComposeYaml;
+use pose::ComposeYaml;
 
 fn main() {
     let args = Args::parse();
@@ -14,11 +14,11 @@ fn main() {
                 eprintln!("{err}");
                 process::exit(10);
             });
-            let yaml = fs::read_to_string(&filename).unwrap_or_else(|err| {
+            let yaml_content = fs::read_to_string(&filename).unwrap_or_else(|err| {
                 eprintln!("Error reading file: {err}");
                 process::exit(11);
             });
-            let map = serde_yaml::from_str(&yaml).unwrap_or_else(|err| {
+            let compose = ComposeYaml::new(&yaml_content).unwrap_or_else(|err| {
                 if err.to_string().starts_with("invalid type") {
                     eprintln!("Error parsing YAML file: invalid file");
                     process::exit(13);
@@ -26,7 +26,7 @@ fn main() {
                 eprintln!("Error parsing YAML file: {err}");
                 process::exit(14);
             });
-            get_services_names(&map).iter().for_each(|service| println!("{}", service));
+            compose.get_services_names().iter().for_each(|service| println!("{}", service));
         },
     }
 }

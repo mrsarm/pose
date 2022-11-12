@@ -1,15 +1,26 @@
 use std::collections::BTreeMap;
-use serde_yaml::{Mapping, Value};
+use serde_yaml::{Mapping, Value, Error};
 
-pub fn get_services(map: &BTreeMap<String, Value>) -> Option<&Mapping> {
-    let value = map.get("services");
-    value.map(|v| v.as_mapping()).unwrap_or_default()
+pub struct ComposeYaml {
+    map: BTreeMap<String, Value>
 }
 
-pub fn get_services_names(map: &BTreeMap<String, Value>) -> Vec<&str> {
-    let services = get_services(&map);
-    match services {
-        Some(s) => s.keys().map(|k| k.as_str().unwrap()).collect::<Vec<_>>(),
-        None => Vec::default()
+impl ComposeYaml {
+    pub fn new(yaml: &str) -> Result<ComposeYaml, Error> {
+        let map = serde_yaml::from_str(&yaml)?;
+        Ok(ComposeYaml { map })
+    }
+
+    pub fn get_services(&self) -> Option<&Mapping> {
+        let value = self.map.get("services");
+        value.map(|v| v.as_mapping()).unwrap_or_default()
+    }
+
+    pub fn get_services_names(&self) -> Vec<&str> {
+        let services = self.get_services();
+        match services {
+            Some(s) => s.keys().map(|k| k.as_str().unwrap()).collect::<Vec<_>>(),
+            None => Vec::default()
+        }
     }
 }
