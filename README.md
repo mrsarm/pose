@@ -67,6 +67,34 @@ $ cargo install docker-pose
 Or from the source, after cloning the source code, go to the folder and
 execute ` cargo install --path .`.
 
+### Binary Download
+
+Binaries are made available each release (only one release 😛) only for Linux now.
+
+Download the binary on the [release](https://github.com/mrsarm/pose/releases) page.
+
+Once downloaded, untar the file:
+
+```bash
+$ tar -xvf pose*.tar.gz
+```
+
+Check for the execution bit:
+
+```bash
+$ chmod +x pose
+```
+
+and then execute `pose`:
+
+```bash
+$ ./pose
+```
+
+Include the directory Pose is in, in your [PATH Variable](https://www.baeldung.com/linux/path-variable)
+if you wish to be able to execute it anywhere, or, move Pose to a directory already
+included in your `$PATH` variable.
+
 ## About
 
 **Source**: https://github.com/mrsarm/pose
