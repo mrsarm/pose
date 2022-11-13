@@ -1,5 +1,5 @@
 [package]
-name = "pose"
+name = "docker-pose"
 version = "0.1.0"
 edition = "2021"
 authors = ["Mariano Ruiz <mrsarm@gmail.com>"]
@@ -15,3 +15,7 @@ clap = { version = "4.0.23", features = ["derive"] }
 colored = "2.0.0"
 serde_yaml = "0.9.14"
 strum_macros = "0.24.3"
+
+[[bin]]
+name = "pose"
+path = "src/main.rs"

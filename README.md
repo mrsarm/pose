@@ -54,6 +54,19 @@ a local IP in your `/etc/hosts`. Following the example:
 This is useful when trying to access to services ran with Docker Compose (or not) and
 then you need to access them from the browser, from an app outside Docker...
 
+## Install
+
+Like any Rust project, install the binary `pose` in your system with:
+
+```bash
+$ cargo install docker-pose
+```
+
+(Yes, the package name in Crates.io is `docker-pose`, not `pose`).
+
+Or from the source, after cloning the source code, go to the folder and
+execute ` cargo install --path .`.
+
 ## About
 
 **Source**: https://github.com/mrsarm/pose

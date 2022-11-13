@@ -1,4 +1,4 @@
-use pose::ComposeYaml;
+use docker_pose::ComposeYaml;
 use serde_yaml::Error;
 
 #[test]

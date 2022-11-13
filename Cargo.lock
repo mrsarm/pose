@@ -74,6 +74,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "docker-pose"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "colored",
+ "serde_yaml",
+ "strum_macros",
+]
+
+[[package]]
 name = "hashbrown"
 version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -133,16 +143,6 @@ name = "os_str_bytes"
 version = "6.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7b5bf27447411e9ee3ff51186bf7a08e16c341efdde93f4d823e8844429bed7e"
-
-[[package]]
-name = "pose"
-version = "0.1.0"
-dependencies = [
- "clap",
- "colored",
- "serde_yaml",
- "strum_macros",
-]
 
 [[package]]
 name = "proc-macro-error"

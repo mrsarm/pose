@@ -6,7 +6,7 @@ use strum_macros;
 
 //mod lib;
 //use crate::lib::{ComposeYaml, get_compose_filename};
-use pose::{ComposeYaml, get_compose_filename};
+use docker_pose::{ComposeYaml, get_compose_filename};
 
 fn main() {
     let args = Args::parse();
