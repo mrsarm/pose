@@ -1,15 +1,15 @@
 use colored::*;
+use serde_yaml::{Error, Mapping, Value};
 use std::collections::BTreeMap;
 use std::path::Path;
-use serde_yaml::{Mapping, Value, Error};
 
 pub struct ComposeYaml {
-    map: BTreeMap<String, Value>
+    map: BTreeMap<String, Value>,
 }
 
 impl ComposeYaml {
     pub fn new(yaml: &str) -> Result<ComposeYaml, Error> {
-        let map = serde_yaml::from_str(&yaml)?;
+        let map = serde_yaml::from_str(yaml)?;
         Ok(ComposeYaml { map })
     }
 
@@ -22,7 +22,7 @@ impl ComposeYaml {
         let elements = self.get_root_element(element_name);
         match elements {
             Some(s) => s.keys().map(|k| k.as_str().unwrap()).collect::<Vec<_>>(),
-            None => Vec::default()
+            None => Vec::default(),
         }
     }
 }
@@ -30,31 +30,40 @@ impl ComposeYaml {
 // where to look for the compose file when the user
 // don't provide a path
 static COMPOSE_PATHS: [&str; 8] = [
-    "compose.yaml", "compose.yml",
-    "docker-compose.yaml", "docker-compose.yml",
-    "docker/compose.yaml", "docker/compose.yml",
-    "docker/docker-compose.yaml", "docker/docker-compose.yml",
+    "compose.yaml",
+    "compose.yml",
+    "docker-compose.yaml",
+    "docker-compose.yml",
+    "docker/compose.yaml",
+    "docker/compose.yml",
+    "docker/docker-compose.yaml",
+    "docker/docker-compose.yml",
 ];
 
 pub fn get_compose_filename(filename: &Option<String>) -> Result<String, String> {
     match filename {
-        Some(name) =>
+        Some(name) => {
             if Path::new(&name).exists() {
                 Ok(String::from(name))
             } else {
-                Err(format!("{}: No such file or directory: '{}'", "ERROR".red(), name))
-            },
-        None =>
-            COMPOSE_PATHS
-                .into_iter()
-                .filter(|f| Path::new(f).exists())
-                .map(|name| String::from(name))
-                .next()
-                .ok_or(format!(
-                    "{}: Can't find a suitable configuration file in this directory.\n\
-                     Are you in the right directory?\n\n\
-                     Supported filenames: {}",
-                    "ERROR".red(), COMPOSE_PATHS.into_iter().collect::<Vec<&str>>().join(", ")
-                )),
+                Err(format!(
+                    "{}: No such file or directory: '{}'",
+                    "ERROR".red(),
+                    name
+                ))
+            }
+        }
+        None => COMPOSE_PATHS
+            .into_iter()
+            .filter(|f| Path::new(f).exists())
+            .map(String::from)
+            .next()
+            .ok_or(format!(
+                "{}: Can't find a suitable configuration file in this directory.\n\
+                 Are you in the right directory?\n\n\
+                 Supported filenames: {}",
+                "ERROR".red(),
+                COMPOSE_PATHS.into_iter().collect::<Vec<&str>>().join(", ")
+            )),
     }
 }
