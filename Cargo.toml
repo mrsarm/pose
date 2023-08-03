@@ -11,10 +11,10 @@ repository = "https://github.com/mrsarm/pose"
 categories = ["docker"]
 
 [dependencies]
-clap = { version = "4.0.23", features = ["derive"] }
-colored = "2.0.0"
-serde_yaml = "0.9.14"
-strum_macros = "0.24.3"
+clap = { version = "4.3", features = ["derive"] }
+colored = "2.0"
+serde_yaml = "0.9"
+strum_macros = "0.25"
 
 [[bin]]
 name = "pose"
