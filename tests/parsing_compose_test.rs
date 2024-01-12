@@ -53,3 +53,72 @@ volumes:
     assert!(compose.get_root_element_names("services").is_empty());
     Ok(())
 }
+
+#[test]
+fn get_service_envs() -> Result<(), Error> {
+    let yaml = "
+services:
+  app: the-app
+  app1:
+    image: some-image
+    ports:
+      - 8000:8000
+    environment:
+      - PORT=8000
+      - KAFKA_BROKERS=kafka:9092
+      - EMPTY=
+    ";
+    let compose = ComposeYaml::new(&yaml)?;
+    let envs = compose.get_service_envs("app1");
+    assert_eq!(
+        envs.unwrap_or(Vec::default()),
+        vec!["PORT=8000", "KAFKA_BROKERS=kafka:9092", "EMPTY="]
+    );
+    Ok(())
+}
+
+#[test]
+fn get_service_envs_empty() -> Result<(), Error> {
+    let yaml = "
+services:
+  app: the-app
+  app1:
+    image: some-image
+    ports:
+      - 8000:8000
+    ";
+    let compose = ComposeYaml::new(&yaml)?;
+    let envs = compose.get_service_envs("app");
+    assert!(envs.is_none());
+    let envs = compose.get_service_envs("app1");
+    assert!(envs.is_none());
+    let envs = compose.get_service_envs("does-not-exist");
+    assert!(envs.is_none());
+    Ok(())
+}
+
+#[test]
+fn get_service_envs_with_map_notation() -> Result<(), Error> {
+    let yaml = r#"
+services:
+  app: the-app
+  app1:
+    image: some-image
+    ports:
+      - 8000:8000
+    environment:
+      PORT: 8000
+      KAFKA_BROKERS: "kafka:9092"
+  app2:
+    image: another-image:2.0
+    ports:
+      - 9000:9000
+    "#;
+    let compose = ComposeYaml::new(&yaml)?;
+    let envs = compose.get_service_envs("app1");
+    assert_eq!(
+        envs.unwrap_or(Vec::default()),
+        vec!["PORT=8000", "KAFKA_BROKERS=kafka:9092",]
+    );
+    Ok(())
+}

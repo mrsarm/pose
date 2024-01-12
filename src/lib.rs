@@ -2,7 +2,7 @@
 extern crate lazy_static;
 
 use colored::*;
-use serde_yaml::{Error, Mapping, Value};
+use serde_yaml::{to_string, Error, Mapping, Value};
 use std::collections::BTreeMap;
 use std::path::Path;
 
@@ -31,6 +31,30 @@ impl ComposeYaml {
             .keys()
             .map(|k| k.as_str().unwrap())
             .collect::<Vec<_>>()
+    }
+
+    pub fn get_service_envs(&self, service_name: &str) -> Option<Vec<String>> {
+        let services = self.get_root_element("services")?;
+        let service = services.get(service_name)?;
+        let envs = service.get("environment")?;
+        match envs.as_sequence() {
+            None => Some(
+                envs.as_mapping()
+                    .unwrap_or(&EMPTY_MAP)
+                    .into_iter()
+                    .map(|(k, v)| {
+                        let env = k.as_str().unwrap_or("".as_ref());
+                        let val = to_string(v).unwrap_or("".to_string());
+                        format!("{}={}", env, val.trim_end())
+                    })
+                    .collect::<Vec<_>>(),
+            ),
+            Some(seq) => Some(
+                seq.iter()
+                    .map(|v| String::from(v.as_str().unwrap_or("")))
+                    .collect::<Vec<_>>(),
+            ),
+        }
     }
 }
 
