@@ -14,11 +14,11 @@ sales-data
 pg-data
 ```
 
-It looks for the compose file following the [spec](https://docs.docker.com/compose/compose-file/#compose-file)
-about the name convention, or you can specify the name as following: `pose list -f another.yaml services`.
+It looks for the compose file following the [spec](https://github.com/compose-spec/compose-spec/blob/master/spec.md#compose-file)
+as `docker compose` does, or you can specify the filename as following: `pose list -f another.yaml services`.
 
-Execute `pose --help` for more options, but don't expect too much,
-it's just a project I made to have fun with Rust.
+Execute `pose --help` for more options, but don't expect too much, it's just a
+project I made to have fun with Rust.
 
 ## Use Cases
 
@@ -51,8 +51,8 @@ a local IP in your `/etc/hosts`. Following the example:
 127.0.0.1   sales-service postgres redis nginx ...
 ```
 
-This is useful when trying to access to services ran with Docker Compose (or not) and
-then you need to access them from the browser, from an app outside Docker...
+This is useful when trying to access to services ran with Docker Compose, and
+then you need to access them from the browser, or from an app outside Docker.
 
 ## Install
 
@@ -92,8 +92,8 @@ $ ./pose
 ```
 
 Include the directory Pose is in, in your [PATH Variable](https://www.baeldung.com/linux/path-variable)
-if you wish to be able to execute it anywhere, or, move Pose to a directory already
-included in your `$PATH` variable.
+if you wish to be able to execute it anywhere, or move Pose to a directory already
+included in your `$PATH` variable, like `$HOME/.local/bin`.
 
 ## About
 
