@@ -19,6 +19,6 @@ jobs:
     - name: Format Check
       run: cargo fmt -- --check
     - name: Run tests
-      run: cargo test --verbose
+      run: cargo test
     - name: Run --help
       run: cargo run -- --help
