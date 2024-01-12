@@ -1,4 +1,5 @@
 use docker_pose::ComposeYaml;
+use pretty_assertions::assert_eq;
 use serde_yaml::Error;
 
 #[test]
