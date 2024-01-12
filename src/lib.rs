@@ -1,7 +1,14 @@
+#[macro_use]
+extern crate lazy_static;
+
 use colored::*;
 use serde_yaml::{Error, Mapping, Value};
 use std::collections::BTreeMap;
 use std::path::Path;
+
+lazy_static! {
+    static ref EMPTY_MAP: Mapping = Mapping::default();
+}
 
 pub struct ComposeYaml {
     map: BTreeMap<String, Value>,
@@ -19,11 +26,11 @@ impl ComposeYaml {
     }
 
     pub fn get_root_element_names(&self, element_name: &str) -> Vec<&str> {
-        let elements = self.get_root_element(element_name);
-        match elements {
-            Some(s) => s.keys().map(|k| k.as_str().unwrap()).collect::<Vec<_>>(),
-            None => Vec::default(),
-        }
+        let elements = self.get_root_element(element_name).unwrap_or(&EMPTY_MAP);
+        elements
+            .keys()
+            .map(|k| k.as_str().unwrap())
+            .collect::<Vec<_>>()
     }
 }
 
