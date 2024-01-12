@@ -20,12 +20,12 @@ fn main() {
                 process::exit(10);
             });
             let yaml_content = fs::read_to_string(filename).unwrap_or_else(|err| {
-                eprintln!("Error reading file: {err}");
+                eprintln!("Error reading compose file: {err}");
                 process::exit(11);
             });
             let compose = ComposeYaml::new(&yaml_content).unwrap_or_else(|err| {
                 if err.to_string().starts_with("invalid type") {
-                    eprintln!("Error parsing YAML file: invalid file");
+                    eprintln!("Error parsing compose YAML file: invalid content");
                     process::exit(13);
                 }
                 eprintln!("Error parsing YAML file: {err}");
