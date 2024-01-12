@@ -84,9 +84,7 @@ enum Objects {
     /// List secrets
     Secrets,
     /// List service's environment variables
-    Envs {
-        service: String,
-    }
+    Envs { service: String },
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, strum_macros::Display)]
