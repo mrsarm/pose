@@ -45,7 +45,11 @@ impl ComposeYaml {
                     .map(|(k, v)| {
                         let env = k.as_str().unwrap_or("".as_ref());
                         let val = to_string(v).unwrap_or("".to_string());
-                        format!("{}={}", env, val.trim_end())
+                        if val.contains(" ") {
+                            format!("{env}=\"{}\"", val.trim_end())
+                        } else {
+                            format!("{env}={}", val.trim_end())
+                        }
                     })
                     .collect::<Vec<_>>(),
             ),

@@ -56,7 +56,7 @@ volumes:
 
 #[test]
 fn get_service_envs() -> Result<(), Error> {
-    let yaml = "
+    let yaml = r#"
 services:
   app: the-app
   app1:
@@ -66,13 +66,19 @@ services:
     environment:
       - PORT=8000
       - KAFKA_BROKERS=kafka:9092
+      - TITLE="App 1"
       - EMPTY=
-    ";
+    "#;
     let compose = ComposeYaml::new(&yaml)?;
     let envs = compose.get_service_envs("app1");
     assert_eq!(
         envs.unwrap_or(Vec::default()),
-        vec!["PORT=8000", "KAFKA_BROKERS=kafka:9092", "EMPTY="]
+        vec![
+            "PORT=8000",
+            "KAFKA_BROKERS=kafka:9092",
+            "TITLE=\"App 1\"",
+            "EMPTY=",
+        ]
     );
     Ok(())
 }
@@ -109,6 +115,7 @@ services:
     environment:
       PORT: 8000
       KAFKA_BROKERS: "kafka:9092"
+      TITLE: "App 1"
   app2:
     image: another-image:2.0
     ports:
@@ -118,7 +125,11 @@ services:
     let envs = compose.get_service_envs("app1");
     assert_eq!(
         envs.unwrap_or(Vec::default()),
-        vec!["PORT=8000", "KAFKA_BROKERS=kafka:9092",]
+        vec![
+            "PORT=8000",
+            "KAFKA_BROKERS=kafka:9092",
+            "TITLE=\"App 1\"",
+        ]
     );
     Ok(())
 }
