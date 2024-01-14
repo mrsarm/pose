@@ -45,7 +45,7 @@ impl ComposeYaml {
                     .map(|(k, v)| {
                         let env = k.as_str().unwrap_or("".as_ref());
                         let val = to_string(v).unwrap_or("".to_string());
-                        if val.contains(" ") {
+                        if val.contains(' ') {
                             format!("{env}=\"{}\"", val.trim_end())
                         } else {
                             format!("{env}={}", val.trim_end())
@@ -102,7 +102,7 @@ pub fn get_compose_filename(filename: &Option<String>) -> Result<String, String>
                 1 => Ok(files.map(String::from).next().unwrap()),
                 _ => {
                     let filenames = files.into_iter().collect::<Vec<&str>>();
-                    let filename = filenames.get(0).map(|s| s.to_string()).unwrap();
+                    let filename = filenames.first().map(|s| s.to_string()).unwrap();
                     eprintln!(
                         "{}: Found multiple config files with supported names: {}\n\
                         {}: Using {}",
