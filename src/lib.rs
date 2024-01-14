@@ -88,17 +88,32 @@ pub fn get_compose_filename(filename: &Option<String>) -> Result<String, String>
                 ))
             }
         }
-        None => COMPOSE_PATHS
-            .into_iter()
-            .filter(|f| Path::new(f).exists())
-            .map(String::from)
-            .next()
-            .ok_or(format!(
-                "{}: Can't find a suitable configuration file in this directory.\n\
-                 Are you in the right directory?\n\n\
-                 Supported filenames: {}",
-                "ERROR".red(),
-                COMPOSE_PATHS.into_iter().collect::<Vec<&str>>().join(", ")
-            )),
+        None => {
+            let files = COMPOSE_PATHS.into_iter().filter(|f| Path::new(f).exists());
+            let files_count = files.clone().count();
+            match files_count {
+                0 => Err(format!(
+                    "{}: Can't find a suitable configuration file in this directory.\n\
+                    Are you in the right directory?\n\n\
+                    Supported filenames: {}",
+                    "ERROR".red(),
+                    COMPOSE_PATHS.into_iter().collect::<Vec<&str>>().join(", ")
+                )),
+                1 => Ok(files.map(String::from).next().unwrap()),
+                _ => {
+                    let filenames = files.into_iter().collect::<Vec<&str>>();
+                    let filename = filenames.get(0).map(|s| s.to_string()).unwrap();
+                    eprintln!(
+                        "{}: Found multiple config files with supported names: {}\n\
+                        {}: Using {}",
+                        "WARN".yellow(),
+                        filenames.join(", "),
+                        "WARN".yellow(),
+                        filename
+                    );
+                    Ok(filename)
+                }
+            }
+        }
     }
 }

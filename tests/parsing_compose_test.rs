@@ -125,11 +125,7 @@ services:
     let envs = compose.get_service_envs("app1");
     assert_eq!(
         envs.unwrap_or(Vec::default()),
-        vec![
-            "PORT=8000",
-            "KAFKA_BROKERS=kafka:9092",
-            "TITLE=\"App 1\"",
-        ]
+        vec!["PORT=8000", "KAFKA_BROKERS=kafka:9092", "TITLE=\"App 1\"",]
     );
     Ok(())
 }
