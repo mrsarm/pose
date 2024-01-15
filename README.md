@@ -98,7 +98,7 @@ execute ` cargo install --path .`.
 
 ### Binary Download
 
-Binaries are made available each release (one release so far 😛) only for Linux now.
+Binaries are made available each release.
 
 Download the binary on the [release](https://github.com/mrsarm/pose/releases) page.
 
