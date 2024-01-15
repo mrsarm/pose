@@ -60,8 +60,8 @@ then you need to access them from the browser, or from an app outside Docker.
 #### List environment variables from a service
 
 It's specially useful when you want to centralize in one place all the environment
-variables used across all services for local development, but you need some of
-them to set up a service that you maybe want to run outside Docker. E.g.:
+variables used across all services for local development, but at some point you need
+to set up and run one or more services outside Docker. E.g.:
 
 ```bash
 # Check the the services' environment variables
