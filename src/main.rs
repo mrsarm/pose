@@ -20,17 +20,24 @@ fn main() {
                 process::exit(10);
             });
             let yaml_content = fs::read_to_string(filename).unwrap_or_else(|err| {
-                eprintln!("Error reading file: {err}");
+                eprintln!("Error reading compose file: {err}");
                 process::exit(11);
             });
             let compose = ComposeYaml::new(&yaml_content).unwrap_or_else(|err| {
                 if err.to_string().starts_with("invalid type") {
-                    eprintln!("Error parsing YAML file: invalid file");
+                    eprintln!("Error parsing compose YAML file: invalid content");
                     process::exit(13);
                 }
                 eprintln!("Error parsing YAML file: {err}");
                 process::exit(14);
             });
+            if let Objects::Envs { service } = object {
+                let envs_op = compose.get_service_envs(&service);
+                if let Some(envs) = envs_op {
+                    envs.iter().for_each(|env| println!("{}", env));
+                }
+                return;
+            }
             let root_element = object.to_string().to_lowercase();
             let el_iter = compose.get_root_element_names(&root_element).into_iter();
             match pretty {
@@ -76,6 +83,8 @@ enum Objects {
     Configs,
     /// List secrets
     Secrets,
+    /// List service's environment variables
+    Envs { service: String },
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, strum_macros::Display)]

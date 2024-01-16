@@ -4,3 +4,4 @@
 /*.yaml
 /.settings
 /.vscode
+.env*

@@ -1,6 +1,6 @@
 [package]
 name = "docker-pose"
-version = "0.1.0"
+version = "0.2.0-b20"
 edition = "2021"
 authors = ["Mariano Ruiz <mrsarm@gmail.com>"]
 description = "Command line tool to play with 🐳 Docker Compose files."
@@ -13,8 +13,12 @@ categories = ["docker"]
 [dependencies]
 clap = { version = "4.3", features = ["derive"] }
 colored = "2.0"
+lazy_static = "1.4"
 serde_yaml = "0.9"
 strum_macros = "0.25"
+
+[dev-dependencies]
+pretty_assertions = "1.4.0"
 
 [[bin]]
 name = "pose"
