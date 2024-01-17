@@ -33,9 +33,13 @@ impl ComposeYaml {
             .collect::<Vec<_>>()
     }
 
-    pub fn get_service_envs(&self, service_name: &str) -> Option<Vec<String>> {
+    pub fn get_service(&self, service_name: &str) -> Option<&Mapping> {
         let services = self.get_root_element("services")?;
-        let service = services.get(service_name)?;
+        let service = services.get(service_name);
+        service.map(|v| v.as_mapping()).unwrap_or_default()
+    }
+
+    pub fn get_service_envs(&self, service: &Mapping) -> Option<Vec<String>> {
         let envs = service.get("environment")?;
         match envs.as_sequence() {
             None => Some(

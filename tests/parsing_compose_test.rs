@@ -70,7 +70,8 @@ services:
       - EMPTY=
     "#;
     let compose = ComposeYaml::new(&yaml)?;
-    let envs = compose.get_service_envs("app1");
+    let app1 = compose.get_service("app1").expect("app1 not found");
+    let envs = compose.get_service_envs(&app1);
     assert_eq!(
         envs.unwrap_or(Vec::default()),
         vec![
@@ -80,6 +81,26 @@ services:
             "EMPTY=",
         ]
     );
+    Ok(())
+}
+
+#[test]
+fn get_services() -> Result<(), Error> {
+    let yaml = "
+services:
+  app: the-app
+  app-1:
+    image: some-image
+    ports:
+      - 8000:8000
+    ";
+    let compose = ComposeYaml::new(&yaml)?;
+    let app = compose.get_service("app");
+    let app1 = compose.get_service("app-1");
+    let not_exist = compose.get_service("does-not-exist");
+    assert!(app.is_none()); // Because it's malformed
+    assert!(app1.is_some());
+    assert!(not_exist.is_none());
     Ok(())
 }
 
@@ -94,11 +115,8 @@ services:
       - 8000:8000
     ";
     let compose = ComposeYaml::new(&yaml)?;
-    let envs = compose.get_service_envs("app");
-    assert!(envs.is_none());
-    let envs = compose.get_service_envs("app1");
-    assert!(envs.is_none());
-    let envs = compose.get_service_envs("does-not-exist");
+    let app1 = compose.get_service("app1").expect("app1 not found");
+    let envs = compose.get_service_envs(&app1);
     assert!(envs.is_none());
     Ok(())
 }
@@ -122,7 +140,8 @@ services:
       - 9000:9000
     "#;
     let compose = ComposeYaml::new(&yaml)?;
-    let envs = compose.get_service_envs("app1");
+    let app1 = compose.get_service("app1").expect("app1 not found");
+    let envs = compose.get_service_envs(&app1);
     assert_eq!(
         envs.unwrap_or(Vec::default()),
         vec!["PORT=8000", "KAFKA_BROKERS=kafka:9092", "TITLE=\"App 1\"",]

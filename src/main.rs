@@ -1,6 +1,8 @@
 //! `pose` is a command line tool to play with 🐳 Docker Compose files.
 
 use clap::{Parser, Subcommand, ValueEnum};
+use colored::Colorize;
+use serde_yaml::Mapping;
 use std::{fs, process};
 
 //mod lib;
@@ -32,7 +34,8 @@ fn main() {
                 process::exit(14);
             });
             if let Objects::Envs { service } = object {
-                let envs_op = compose.get_service_envs(&service);
+                let serv = get_service(&compose, &service);
+                let envs_op = compose.get_service_envs(serv);
                 if let Some(envs) = envs_op {
                     envs.iter().for_each(|env| println!("{}", env));
                 }
@@ -45,6 +48,17 @@ fn main() {
                 Formats::Oneline => println!("{}", el_iter.collect::<Vec<&str>>().join(" ")),
             }
         }
+    }
+}
+
+pub fn get_service<'a>(compose: &'a ComposeYaml, service_name: &str) -> &'a Mapping {
+    let service = compose.get_service(service_name);
+    match service {
+        None => {
+            eprintln!("{}: No such service found: {}", "ERROR".red(), service_name);
+            process::exit(15);
+        }
+        Some(serv) => serv,
     }
 }
 
