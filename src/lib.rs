@@ -2,12 +2,14 @@
 extern crate lazy_static;
 
 use colored::*;
+use regex::Regex;
 use serde_yaml::{to_string, Error, Mapping, Value};
 use std::collections::BTreeMap;
 use std::path::Path;
 
 lazy_static! {
     static ref EMPTY_MAP: Mapping = Mapping::default();
+    static ref ENV_NAME_REGEX: Regex = Regex::new(r"^\w+$").unwrap();
 }
 
 pub struct ComposeYaml {
@@ -42,6 +44,19 @@ impl ComposeYaml {
     pub fn get_service_envs(&self, service: &Mapping) -> Option<Vec<String>> {
         let envs = service.get("environment")?;
         match envs.as_sequence() {
+            Some(seq) => Some(
+                seq.iter()
+                    .map(|v| {
+                        let val = v.as_str().unwrap_or("");
+                        if ENV_NAME_REGEX.captures(val).is_some() {
+                            // Env variable without a value or "=" at the end
+                            format!("{val}=")
+                        } else {
+                            String::from(val)
+                        }
+                    })
+                    .collect::<Vec<_>>(),
+            ),
             None => Some(
                 envs.as_mapping()
                     .unwrap_or(&EMPTY_MAP)
@@ -50,16 +65,15 @@ impl ComposeYaml {
                         let env = k.as_str().unwrap_or("".as_ref());
                         let val = to_string(v).unwrap_or("".to_string());
                         if val.contains(' ') {
-                            format!("{env}=\"{}\"", val.trim_end())
+                            if val.contains('"') {
+                                format!("{env}='{}'", val.trim_end())
+                            } else {
+                                format!("{env}=\"{}\"", val.trim_end())
+                            }
                         } else {
                             format!("{env}={}", val.trim_end())
                         }
                     })
-                    .collect::<Vec<_>>(),
-            ),
-            Some(seq) => Some(
-                seq.iter()
-                    .map(|v| String::from(v.as_str().unwrap_or("")))
                     .collect::<Vec<_>>(),
             ),
         }

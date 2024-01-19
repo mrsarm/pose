@@ -68,6 +68,7 @@ services:
       - KAFKA_BROKERS=kafka:9092
       - TITLE="App 1"
       - EMPTY=
+      - UNDEFINED
     "#;
     let compose = ComposeYaml::new(&yaml)?;
     let app1 = compose.get_service("app1").expect("app1 not found");
@@ -79,6 +80,7 @@ services:
             "KAFKA_BROKERS=kafka:9092",
             "TITLE=\"App 1\"",
             "EMPTY=",
+            "UNDEFINED=",
         ]
     );
     Ok(())
