@@ -94,7 +94,8 @@ $ cargo install docker-pose
 (Yes, the package name in Crates.io is `docker-pose`, not `pose`).
 
 Or from the source, after cloning the source code, go to the folder and
-execute ` cargo install --path .`.
+execute ` cargo install --path .` (normally it will install the binary
+in the `~/.cargo/bin` folder).
 
 ### Binary Download
 
