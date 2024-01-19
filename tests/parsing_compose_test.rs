@@ -69,6 +69,7 @@ services:
       - TITLE="App 1"
       - EMPTY=
       - UNDEFINED
+      - UNDEFINED_TOO
     "#;
     let compose = ComposeYaml::new(&yaml)?;
     let app1 = compose.get_service("app1").expect("app1 not found");
@@ -81,6 +82,7 @@ services:
             "TITLE=\"App 1\"",
             "EMPTY=",
             "UNDEFINED=",
+            "UNDEFINED_TOO=",
         ]
     );
     Ok(())
