@@ -67,6 +67,7 @@ services:
       - PORT=8000
       - KAFKA_BROKERS=kafka:9092
       - TITLE="App 1"
+      - DESC_1='App 1 is the "Best"'
       - EMPTY=
       - UNDEFINED
       - UNDEFINED_TOO
@@ -80,6 +81,7 @@ services:
             "PORT=8000",
             "KAFKA_BROKERS=kafka:9092",
             "TITLE=\"App 1\"",
+            "DESC_1='App 1 is the \"Best\"'",
             "EMPTY=",
             "UNDEFINED=",
             "UNDEFINED_TOO=",
