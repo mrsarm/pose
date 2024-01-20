@@ -54,6 +54,19 @@ impl ComposeYaml {
         Some(profiles)
     }
 
+    pub fn get_images(&self) -> Option<Vec<&str>> {
+        let services = self.get_services()?;
+        let mut images = services
+            .values()
+            .flat_map(|v| v.as_mapping())
+            .flat_map(|s| s.get("image"))
+            .flat_map(|p| p.as_str())
+            .collect::<Vec<_>>();
+        images.sort();
+        images.dedup();
+        Some(images)
+    }
+
     pub fn get_service(&self, service_name: &str) -> Option<&Mapping> {
         let services = self.get_services()?;
         let service = services.get(service_name);

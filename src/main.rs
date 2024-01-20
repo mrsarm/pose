@@ -42,9 +42,13 @@ fn main() {
                         envs.iter().for_each(|env| println!("{}", env));
                     }
                 }
-                Objects::Profiles => {
-                    let profiles_op = compose.get_profiles_names();
-                    match profiles_op {
+                Objects::Images | Objects::Profiles => {
+                    let op = if object == Objects::Profiles {
+                        compose.get_profiles_names()
+                    } else {
+                        compose.get_images()
+                    };
+                    match op {
                         None => {
                             eprintln!("{}: No services section found", "ERROR".red());
                             process::exit(15);
@@ -54,7 +58,11 @@ fn main() {
                         }
                     }
                 }
-                _ => {
+                Objects::Services
+                | Objects::Volumes
+                | Objects::Networks
+                | Objects::Configs
+                | Objects::Secrets => {
                     let root_element = object.to_string().to_lowercase();
                     let el_iter = compose.get_root_element_names(&root_element).into_iter();
                     print_names(el_iter, pretty);
@@ -105,10 +113,12 @@ enum Commands {
     //TODO more coming soon...
 }
 
-#[derive(Subcommand, strum_macros::Display)]
+#[derive(Subcommand, strum_macros::Display, PartialEq)]
 enum Objects {
     /// List services
     Services,
+    /// List images
+    Images,
     /// List volumes
     Volumes,
     /// List networks

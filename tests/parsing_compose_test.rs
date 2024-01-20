@@ -205,3 +205,51 @@ volumes:
     assert!(profiles.is_none());
     Ok(())
 }
+
+#[test]
+fn get_images() -> Result<(), Error> {
+    let yaml = "
+services:
+  app0: the-app
+  app:
+    image: app
+  web:
+    image: namespace.server.com/image:master
+  psql:
+    image: postgres:16.1
+    profiles:
+      - tools
+  nginx:
+    image: nginx:stable
+  app-provision:
+    image: app
+    profiles:
+      - tools
+      - provision
+    ";
+    let compose = ComposeYaml::new(&yaml)?;
+    let images = compose.get_images();
+    assert_eq!(
+        images,
+        Some(vec![
+            "app",
+            "namespace.server.com/image:master",
+            "nginx:stable",
+            "postgres:16.1",
+        ])
+    );
+    Ok(())
+}
+
+#[test]
+fn get_images_none() -> Result<(), Error> {
+    let yaml = "
+volumes:
+  data:
+    driver: local
+    ";
+    let compose = ComposeYaml::new(&yaml)?;
+    let images = compose.get_images();
+    assert!(images.is_none());
+    Ok(())
+}
