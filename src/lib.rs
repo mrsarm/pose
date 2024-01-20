@@ -35,8 +35,27 @@ impl ComposeYaml {
             .collect::<Vec<_>>()
     }
 
+    pub fn get_services(&self) -> Option<&Mapping> {
+        self.get_root_element("services")
+    }
+
+    pub fn get_profiles_names(&self) -> Option<Vec<&str>> {
+        let services = self.get_services()?;
+        let mut profiles = services
+            .values()
+            .flat_map(|v| v.as_mapping())
+            .flat_map(|s| s.get("profiles"))
+            .flat_map(|p| p.as_sequence())
+            .flat_map(|seq| seq.iter())
+            .flat_map(|e| e.as_str())
+            .collect::<Vec<_>>();
+        profiles.sort();
+        profiles.dedup();
+        Some(profiles)
+    }
+
     pub fn get_service(&self, service_name: &str) -> Option<&Mapping> {
-        let services = self.get_root_element("services")?;
+        let services = self.get_services()?;
         let service = services.get(service_name);
         service.map(|v| v.as_mapping()).unwrap_or_default()
     }

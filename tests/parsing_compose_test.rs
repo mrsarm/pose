@@ -154,3 +154,54 @@ services:
     );
     Ok(())
 }
+
+#[test]
+fn get_profiles() -> Result<(), Error> {
+    let yaml = "
+services:
+  app: the-app
+  psql:
+    image: postgres
+    profiles:
+      - tools
+  web:
+    image: web-server
+  app-provision:
+    image: app
+    profiles:
+      - tools
+      - provision
+    ";
+    let compose = ComposeYaml::new(&yaml)?;
+    let profiles = compose.get_profiles_names();
+    assert_eq!(profiles, Some(vec!["provision", "tools"]));
+    Ok(())
+}
+
+#[test]
+fn get_profiles_vector_notation() -> Result<(), Error> {
+    let yaml = "
+services:
+  app: the-app
+  app-provision:
+    image: app
+    profiles: [tools, provision]
+    ";
+    let compose = ComposeYaml::new(&yaml)?;
+    let profiles = compose.get_profiles_names();
+    assert_eq!(profiles, Some(vec!["provision", "tools"]));
+    Ok(())
+}
+
+#[test]
+fn get_profiles_none() -> Result<(), Error> {
+    let yaml = "
+volumes:
+  data:
+    driver: local
+    ";
+    let compose = ComposeYaml::new(&yaml)?;
+    let profiles = compose.get_profiles_names();
+    assert!(profiles.is_none());
+    Ok(())
+}

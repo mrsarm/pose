@@ -3,6 +3,7 @@
 use clap::{Parser, Subcommand, ValueEnum};
 use colored::Colorize;
 use serde_yaml::Mapping;
+use std::vec::IntoIter;
 use std::{fs, process};
 
 //mod lib;
@@ -33,30 +34,49 @@ fn main() {
                 eprintln!("Error parsing YAML file: {err}");
                 process::exit(14);
             });
-            if let Objects::Envs { service } = object {
-                let serv = get_service(&compose, &service);
-                let envs_op = compose.get_service_envs(serv);
-                if let Some(envs) = envs_op {
-                    envs.iter().for_each(|env| println!("{}", env));
+            match object {
+                Objects::Envs { service } => {
+                    let serv = get_service(&compose, &service);
+                    let envs_op = compose.get_service_envs(serv);
+                    if let Some(envs) = envs_op {
+                        envs.iter().for_each(|env| println!("{}", env));
+                    }
                 }
-                return;
-            }
-            let root_element = object.to_string().to_lowercase();
-            let el_iter = compose.get_root_element_names(&root_element).into_iter();
-            match pretty {
-                Formats::Full => el_iter.for_each(|service| println!("{}", service)),
-                Formats::Oneline => println!("{}", el_iter.collect::<Vec<&str>>().join(" ")),
+                Objects::Profiles => {
+                    let profiles_op = compose.get_profiles_names();
+                    match profiles_op {
+                        None => {
+                            eprintln!("{}: No services section found", "ERROR".red());
+                            process::exit(15);
+                        }
+                        Some(profiles) => {
+                            print_names(profiles.into_iter(), pretty);
+                        }
+                    }
+                }
+                _ => {
+                    let root_element = object.to_string().to_lowercase();
+                    let el_iter = compose.get_root_element_names(&root_element).into_iter();
+                    print_names(el_iter, pretty);
+                }
             }
         }
     }
 }
 
-pub fn get_service<'a>(compose: &'a ComposeYaml, service_name: &str) -> &'a Mapping {
+fn print_names(iter: IntoIter<&str>, pretty: Formats) {
+    match pretty {
+        Formats::Full => iter.for_each(|service| println!("{}", service)),
+        Formats::Oneline => println!("{}", iter.collect::<Vec<&str>>().join(" ")),
+    }
+}
+
+fn get_service<'a>(compose: &'a ComposeYaml, service_name: &str) -> &'a Mapping {
     let service = compose.get_service(service_name);
     match service {
         None => {
             eprintln!("{}: No such service found: {}", "ERROR".red(), service_name);
-            process::exit(15);
+            process::exit(16);
         }
         Some(serv) => serv,
     }
@@ -97,6 +117,8 @@ enum Objects {
     Configs,
     /// List secrets
     Secrets,
+    /// List profiles
+    Profiles,
     /// List service's environment variables
     Envs { service: String },
 }
