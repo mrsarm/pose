@@ -12,28 +12,27 @@ use docker_pose::{get_compose_filename, ComposeYaml};
 
 fn main() {
     let args = Args::parse();
+    let filename = get_compose_filename(&args.filename).unwrap_or_else(|err| {
+        eprintln!("{err}");
+        process::exit(10);
+    });
+    let yaml_content = fs::read_to_string(filename).unwrap_or_else(|err| {
+        eprintln!("Error reading compose file: {err}");
+        process::exit(11);
+    });
+    let compose = ComposeYaml::new(&yaml_content).unwrap_or_else(|err| {
+        if err.to_string().starts_with("invalid type") {
+            eprintln!("Error parsing compose YAML file: invalid content");
+            process::exit(13);
+        }
+        eprintln!("Error parsing YAML file: {err}");
+        process::exit(14);
+    });
     match args.command {
         Commands::List {
-            filename,
             object,
             pretty,
         } => {
-            let filename = get_compose_filename(&filename).unwrap_or_else(|err| {
-                eprintln!("{err}");
-                process::exit(10);
-            });
-            let yaml_content = fs::read_to_string(filename).unwrap_or_else(|err| {
-                eprintln!("Error reading compose file: {err}");
-                process::exit(11);
-            });
-            let compose = ComposeYaml::new(&yaml_content).unwrap_or_else(|err| {
-                if err.to_string().starts_with("invalid type") {
-                    eprintln!("Error parsing compose YAML file: invalid content");
-                    process::exit(13);
-                }
-                eprintln!("Error parsing YAML file: {err}");
-                process::exit(14);
-            });
             match object {
                 Objects::Envs { service } => {
                     let serv = get_service(&compose, &service);
@@ -95,6 +94,9 @@ fn get_service<'a>(compose: &'a ComposeYaml, service_name: &str) -> &'a Mapping 
 struct Args {
     #[command(subcommand)]
     command: Commands,
+
+    #[arg(short, long)]
+    filename: Option<String>,
 }
 
 #[derive(Subcommand)]
@@ -103,9 +105,6 @@ enum Commands {
     List {
         #[command(subcommand)]
         object: Objects,
-
-        #[arg(short, long)]
-        filename: Option<String>,
 
         #[arg(short, long, value_enum, default_value_t = Formats::Full, value_name = "FORMAT")]
         pretty: Formats,

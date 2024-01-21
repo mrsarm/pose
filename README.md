@@ -18,7 +18,7 @@ POSTGRES_PASSWORD=password
 ```
 
 It looks for the compose file following the [spec](https://github.com/compose-spec/compose-spec/blob/master/spec.md#compose-file)
-as `docker compose` does, or you can specify the filename as following: `pose list -f another.yaml services`.
+as `docker compose` does, or you can specify the filename as following: `pose -f another.yaml list services`.
 
 Execute `pose --help` for more options, but don't expect too much, it's just a
 project I made to have fun with Rust.
