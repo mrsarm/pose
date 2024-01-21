@@ -110,6 +110,29 @@ impl ComposeYaml {
             ),
         }
     }
+
+    pub fn get_service_depends_on(&self, service: &Mapping) -> Option<Vec<String>> {
+        let depends = service.get("depends_on")?;
+        match depends.as_sequence() {
+            Some(seq) => Some(
+                seq.iter()
+                    .map(|el| el.as_str().unwrap_or(""))
+                    .filter(|o| !o.is_empty())
+                    .map(String::from)
+                    .collect::<Vec<_>>(),
+            ),
+            None => Some(
+                depends
+                    .as_mapping()
+                    .unwrap_or(&EMPTY_MAP)
+                    .keys()
+                    .map(|k| k.as_str().unwrap_or(""))
+                    .filter(|o| !o.is_empty())
+                    .map(String::from)
+                    .collect::<Vec<_>>(),
+            ),
+        }
+    }
 }
 
 // where to look for the compose file when the user

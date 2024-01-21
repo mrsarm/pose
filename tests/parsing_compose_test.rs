@@ -253,3 +253,95 @@ volumes:
     assert!(images.is_none());
     Ok(())
 }
+
+#[test]
+fn get_service_depends() -> Result<(), Error> {
+    let yaml = r#"
+services:
+  app:
+    image: the-app
+    depends_on:
+      - x
+  postgres:
+    image: postgres
+  app1:
+    image: some-image
+    ports:
+      - 8000:8000
+    depends_on:
+      - postgres
+      - app
+    "#;
+    let compose = ComposeYaml::new(&yaml)?;
+    let app1 = compose.get_service("app1").expect("app1 not found");
+    let depends_on = compose.get_service_depends_on(&app1);
+    assert_eq!(
+        depends_on.unwrap_or(Vec::default()),
+        vec!["postgres", "app"]
+    );
+    Ok(())
+}
+
+#[test]
+fn get_service_depends_array_notation() -> Result<(), Error> {
+    let yaml = r#"
+services:
+  app:
+    image: the-app
+    depends_on: [x, postgres]
+  postgres:
+    image: postgres
+  app1:
+    image: some-image
+    ports:
+      - 8000:8000
+    depends_on:
+      - postgres
+      - app
+    "#;
+    let compose = ComposeYaml::new(&yaml)?;
+    let app1 = compose.get_service("app").expect("app not found");
+    let depends_on = compose.get_service_depends_on(&app1);
+    assert_eq!(depends_on.unwrap_or(Vec::default()), vec!["x", "postgres"]);
+    Ok(())
+}
+
+#[test]
+fn get_service_depends_with_conditions() -> Result<(), Error> {
+    let yaml = r#"
+services:
+  app:
+    image: the-app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+  postgres:
+    image: postgres
+    "#;
+    let compose = ComposeYaml::new(&yaml)?;
+    let app1 = compose.get_service("app").expect("app not found");
+    let depends_on = compose.get_service_depends_on(&app1);
+    assert_eq!(
+        depends_on.unwrap_or(Vec::default()),
+        vec!["postgres", "redis"]
+    );
+    Ok(())
+}
+
+#[test]
+fn get_service_no_depends() -> Result<(), Error> {
+    let yaml = r#"
+services:
+  app:
+    image: the-app
+  postgres:
+    image: postgres
+    "#;
+    let compose = ComposeYaml::new(&yaml)?;
+    let app1 = compose.get_service("app").expect("app not found");
+    let depends_on = compose.get_service_depends_on(&app1);
+    assert!(depends_on.is_none());
+    Ok(())
+}

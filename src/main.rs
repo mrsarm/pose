@@ -37,6 +37,13 @@ fn main() {
                     envs.iter().for_each(|env| println!("{}", env));
                 }
             }
+            Objects::Depends { service } => {
+                let serv = get_service(&compose, &service);
+                let deps_op = compose.get_service_depends_on(serv);
+                if let Some(envs) = deps_op {
+                    envs.iter().for_each(|env| println!("{}", env));
+                }
+            }
             Objects::Images | Objects::Profiles => {
                 let op = if object == Objects::Profiles {
                     compose.get_profiles_names()
@@ -113,6 +120,8 @@ enum Objects {
     Services,
     /// List images
     Images,
+    /// List service's depends_on
+    Depends { service: String },
     /// List volumes
     Volumes,
     /// List networks
