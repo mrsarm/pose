@@ -29,45 +29,40 @@ fn main() {
         process::exit(14);
     });
     match args.command {
-        Commands::List {
-            object,
-            pretty,
-        } => {
-            match object {
-                Objects::Envs { service } => {
-                    let serv = get_service(&compose, &service);
-                    let envs_op = compose.get_service_envs(serv);
-                    if let Some(envs) = envs_op {
-                        envs.iter().for_each(|env| println!("{}", env));
-                    }
-                }
-                Objects::Images | Objects::Profiles => {
-                    let op = if object == Objects::Profiles {
-                        compose.get_profiles_names()
-                    } else {
-                        compose.get_images()
-                    };
-                    match op {
-                        None => {
-                            eprintln!("{}: No services section found", "ERROR".red());
-                            process::exit(15);
-                        }
-                        Some(profiles) => {
-                            print_names(profiles.into_iter(), pretty);
-                        }
-                    }
-                }
-                Objects::Services
-                | Objects::Volumes
-                | Objects::Networks
-                | Objects::Configs
-                | Objects::Secrets => {
-                    let root_element = object.to_string().to_lowercase();
-                    let el_iter = compose.get_root_element_names(&root_element).into_iter();
-                    print_names(el_iter, pretty);
+        Commands::List { object, pretty } => match object {
+            Objects::Envs { service } => {
+                let serv = get_service(&compose, &service);
+                let envs_op = compose.get_service_envs(serv);
+                if let Some(envs) = envs_op {
+                    envs.iter().for_each(|env| println!("{}", env));
                 }
             }
-        }
+            Objects::Images | Objects::Profiles => {
+                let op = if object == Objects::Profiles {
+                    compose.get_profiles_names()
+                } else {
+                    compose.get_images()
+                };
+                match op {
+                    None => {
+                        eprintln!("{}: No services section found", "ERROR".red());
+                        process::exit(15);
+                    }
+                    Some(profiles) => {
+                        print_names(profiles.into_iter(), pretty);
+                    }
+                }
+            }
+            Objects::Services
+            | Objects::Volumes
+            | Objects::Networks
+            | Objects::Configs
+            | Objects::Secrets => {
+                let root_element = object.to_string().to_lowercase();
+                let el_iter = compose.get_root_element_names(&root_element).into_iter();
+                print_names(el_iter, pretty);
+            }
+        },
     }
 }
 
