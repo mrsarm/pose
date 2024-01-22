@@ -70,7 +70,7 @@ jobs:
         include:
           - build: windows
             os: windows-latest
-            target: x86_64-pc-windows-gnu
+            target: x86_64-pc-windows-msvc
           # 32 bits ??
 
     steps:
