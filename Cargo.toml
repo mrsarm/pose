@@ -8,11 +8,11 @@ license = "GPL-3.0"
 readme = "README.md"
 homepage = "https://github.com/mrsarm/pose"
 repository = "https://github.com/mrsarm/pose"
-categories = ["docker"]
+categories = ["docker", "command-line-interface"]
 
 [dependencies]
-clap = { version = "4.3", features = ["derive"] }
-colored = "2.0"
+clap = { version = "4.4", features = ["derive"] }
+colored = "2.1"
 lazy_static = "1.4"
 serde_yaml = "0.9"
 strum_macros = "0.25"
