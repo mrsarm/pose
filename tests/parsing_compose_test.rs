@@ -7,7 +7,9 @@ fn get_services_list() -> Result<(), Error> {
     let yaml = "
 services:
   app: the-app
+  # comments should not ...
   app1:
+    # ... affects results
     image: some-image
     ports:
       - 8000:8000
@@ -226,13 +228,16 @@ services:
     profiles:
       - tools
       - provision
+  app-with-another-tag:
+    image: app:1.0
     ";
     let compose = ComposeYaml::new(&yaml)?;
     let images = compose.get_images();
     assert_eq!(
         images,
         Some(vec![
-            "app",
+            "app",     // used twice, but included once
+            "app:1.0", // same image but with different version
             "namespace.server.com/image:master",
             "nginx:stable",
             "postgres:16.1",
