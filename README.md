@@ -99,7 +99,7 @@ in the `~/.cargo/bin` folder).
 
 ### Binary Download
 
-Binaries are made available each release.
+Binaries are made available each release for Linux, Mac and Windows.
 
 Download the binary on the [release](https://github.com/mrsarm/pose/releases) page.
 
@@ -124,6 +124,21 @@ $ ./pose
 Include the directory Pose is in, in your [PATH Variable](https://www.baeldung.com/linux/path-variable)
 if you wish to be able to execute it anywhere, or move Pose to a directory already
 included in your `$PATH` variable, like `$HOME/.local/bin`.
+
+### Build and run tests
+
+There is a `Makefile` that can be used to execute most of the development tasks,
+like `make release` that executes `cargo build --release`, so check out the file
+even if you don't use `make` to see useful commands.
+
+Rust tests with `make test`, but there are also shell tests written in Shell script
+using the test framework [Bats](https://bats-core.readthedocs.io). To execute the
+bash tests: `make test-cmd`, or `make test-all` to run all the tests at once.
+
+If you get an error like `make: ./tests/bats/bin/bats: Command not found`,
+it’s because you cloned the project without the `--recurse-submodules` git argument.
+Execute first `git submodule update --init` to clone the submodules within the `pose` folder.
+
 
 ## About
 

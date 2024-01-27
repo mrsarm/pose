@@ -12,13 +12,15 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+      with:
+        submodules: true
     - name: Build
-      run: cargo build
+      run: make build
     - name: Lint
-      run: cargo clippy -- -D warnings
+      run: make lint
     - name: Format Check
-      run: cargo fmt -- --check
+      run: make fmt-check
     - name: Run tests
-      run: cargo test
-    - name: Run --help
-      run: cargo run -- --help
+      run: make test
+    - name: Run shell tests
+      run: make test-cmd
