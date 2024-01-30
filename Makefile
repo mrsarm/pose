@@ -28,4 +28,4 @@ fmt-check:
 test-cmd: build
 	./tests/bats/bin/bats tests/run_test.bats
 
-test-all: test test-cmd
+test-all: lint test test-cmd
