@@ -22,7 +22,10 @@ fn main() {
     });
     let compose = ComposeYaml::new(&yaml_content).unwrap_or_else(|err| {
         if err.to_string().starts_with("invalid type") {
-            eprintln!("{}: parsing compose YAML file: invalid content", "ERROR".red());
+            eprintln!(
+                "{}: parsing compose YAML file: invalid content",
+                "ERROR".red()
+            );
             process::exit(13);
         }
         eprintln!("{}: parsing YAML file: {}", "ERROR".red(), err);
