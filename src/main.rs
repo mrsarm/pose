@@ -13,19 +13,19 @@ use docker_pose::{get_compose_filename, ComposeYaml};
 fn main() {
     let args = Args::parse();
     let filename = get_compose_filename(&args.filename).unwrap_or_else(|err| {
-        eprintln!("{err}");
+        eprintln!("{}: {}", "ERROR".red(), err);
         process::exit(10);
     });
     let yaml_content = fs::read_to_string(filename).unwrap_or_else(|err| {
-        eprintln!("Error reading compose file: {err}");
+        eprintln!("{}: reading compose file: {}", "ERROR".red(), err);
         process::exit(11);
     });
     let compose = ComposeYaml::new(&yaml_content).unwrap_or_else(|err| {
         if err.to_string().starts_with("invalid type") {
-            eprintln!("Error parsing compose YAML file: invalid content");
+            eprintln!("{}: parsing compose YAML file: invalid content", "ERROR".red());
             process::exit(13);
         }
-        eprintln!("Error parsing YAML file: {err}");
+        eprintln!("{}: parsing YAML file: {}", "ERROR".red(), err);
         process::exit(14);
     });
     match args.command {
