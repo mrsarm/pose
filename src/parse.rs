@@ -1,4 +1,4 @@
-use crate::Verbosity;
+use crate::verbose::Verbosity;
 use colored::*;
 use regex::Regex;
 use serde_yaml::{to_string, Error, Mapping, Value};
