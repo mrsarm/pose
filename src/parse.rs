@@ -1,9 +1,9 @@
+use crate::Verbosity;
 use colored::*;
 use regex::Regex;
 use serde_yaml::{to_string, Error, Mapping, Value};
 use std::collections::BTreeMap;
 use std::path::Path;
-use crate::Verbosity;
 
 lazy_static! {
     static ref EMPTY_MAP: Mapping = Mapping::default();

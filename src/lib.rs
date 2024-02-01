@@ -6,3 +6,4 @@ mod verbose;
 
 pub use verbose::Verbosity;
 pub use parse::{get_compose_filename, ComposeYaml};
+pub use verbose::Verbosity;
