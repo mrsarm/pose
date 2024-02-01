@@ -180,7 +180,7 @@ pub fn get_compose_filename(
                         eprintln!("{}: Using {}", "DEBUG".green(), filename_0);
                     }
                     Ok(filename_0)
-                },
+                }
                 _ => {
                     let filenames = files.into_iter().collect::<Vec<&str>>();
                     let filename = filenames.first().map(|s| s.to_string()).unwrap();

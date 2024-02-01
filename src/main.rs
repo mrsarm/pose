@@ -117,12 +117,10 @@ impl Args {
     pub fn get_verbosity(&self) -> Verbosity {
         match self.verbose {
             true => Verbosity::Verbose,
-            false => {
-                match self.quiet {
-                    true => Verbosity::Quiet,
-                    false => Verbosity::Info,
-                }
-            }
+            false => match self.quiet {
+                true => Verbosity::Quiet,
+                false => Verbosity::Info,
+            },
         }
     }
 }
