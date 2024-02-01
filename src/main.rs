@@ -8,11 +8,12 @@ use std::{fs, process};
 
 //mod lib;
 //use crate::lib::{ComposeYaml, get_compose_filename};
-use docker_pose::{get_compose_filename, ComposeYaml};
+use docker_pose::{get_compose_filename, ComposeYaml, Verbosity};
 
 fn main() {
     let args = Args::parse();
-    let filename = get_compose_filename(&args.filename).unwrap_or_else(|err| {
+    let verbosity = args.get_verbosity();
+    let filename = get_compose_filename(&args.filename, verbosity).unwrap_or_else(|err| {
         eprintln!("{}: {}", "ERROR".red(), err);
         process::exit(10);
     });
@@ -102,6 +103,28 @@ struct Args {
 
     #[arg(short, long)]
     filename: Option<String>,
+
+    /// Increase verbosity
+    #[arg(long, conflicts_with = "quiet")]
+    verbose: bool,
+
+    /// Only display relevant information or errors
+    #[arg(long, short, conflicts_with = "verbose")]
+    quiet: bool,
+}
+
+impl Args {
+    pub fn get_verbosity(&self) -> Verbosity {
+        match self.verbose {
+            true => Verbosity::Verbose,
+            false => {
+                match self.quiet {
+                    true => Verbosity::Quiet,
+                    false => Verbosity::Info,
+                }
+            }
+        }
+    }
 }
 
 #[derive(Subcommand)]

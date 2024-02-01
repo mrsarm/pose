@@ -3,6 +3,7 @@ use regex::Regex;
 use serde_yaml::{to_string, Error, Mapping, Value};
 use std::collections::BTreeMap;
 use std::path::Path;
+use crate::Verbosity;
 
 lazy_static! {
     static ref EMPTY_MAP: Mapping = Mapping::default();
@@ -145,7 +146,10 @@ static COMPOSE_PATHS: [&str; 8] = [
     "docker/docker-compose.yml",
 ];
 
-pub fn get_compose_filename(filename: &Option<String>) -> Result<String, String> {
+pub fn get_compose_filename(
+    filename: &Option<String>,
+    verbosity: Verbosity,
+) -> Result<String, String> {
     match filename {
         Some(name) => {
             if Path::new(&name).exists() {
@@ -169,7 +173,14 @@ pub fn get_compose_filename(filename: &Option<String>) -> Result<String, String>
                     "ERROR".red(),
                     COMPOSE_PATHS.into_iter().collect::<Vec<&str>>().join(", ")
                 )),
-                1 => Ok(files.map(String::from).next().unwrap()),
+                1 => {
+                    let filename_0 = files.map(String::from).next().unwrap();
+                    if matches!(verbosity, Verbosity::Verbose) {
+                        eprintln!("{}: Filename not provided", "DEBUG".green());
+                        eprintln!("{}: Using {}", "DEBUG".green(), filename_0);
+                    }
+                    Ok(filename_0)
+                },
                 _ => {
                     let filenames = files.into_iter().collect::<Vec<&str>>();
                     let filename = filenames.first().map(|s| s.to_string()).unwrap();

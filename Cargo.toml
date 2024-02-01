@@ -20,6 +20,7 @@ regex = "1.10"
 
 [dev-dependencies]
 pretty_assertions = "1.4.0"
+serial_test = "3.0"
 
 [profile.release]
 # This is going to be the default soon if not provided
