@@ -184,14 +184,16 @@ pub fn get_compose_filename(
                 _ => {
                     let filenames = files.into_iter().collect::<Vec<&str>>();
                     let filename = filenames.first().map(|s| s.to_string()).unwrap();
-                    eprintln!(
-                        "{}: Found multiple config files with supported names: {}\n\
-                        {}: Using {}",
-                        "WARN".yellow(),
-                        filenames.join(", "),
-                        "WARN".yellow(),
-                        filename
-                    );
+                    if !matches!(verbosity, Verbosity::Quiet) {
+                        eprintln!(
+                            "{}: Found multiple config files with supported names: {}\n\
+                            {}: Using {}",
+                            "WARN".yellow(),
+                            filenames.join(", "),
+                            "WARN".yellow(),
+                            filename
+                        );
+                    }
                     Ok(filename)
                 }
             }
