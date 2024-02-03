@@ -29,7 +29,7 @@ fn main() {
                     match output.status.success() {
                         true => {
                             // success !
-                            if !output.stderr.is_empty() {
+                            if !args.quiet && !output.stderr.is_empty() {
                                 // although, there may be warnings sent to the stderr
                                 eprintln!(
                                     "{}: the following are warnings from compose:",
