@@ -158,6 +158,35 @@ services:
 }
 
 #[test]
+fn get_service_envs_with_map_notation_and_quoted() -> Result<(), Error> {
+    let yaml = r#"
+services:
+  app1:
+    image: some-image
+    environment:
+      PORT: 8000
+      KAFKA_PORT: "9092"
+      DB_PORT: '5432'
+      TITLE: "App 1"
+      DESC: 'Desc 1'
+    "#;
+    let compose = ComposeYaml::new(&yaml)?;
+    let app1 = compose.get_service("app1").expect("app1 not found");
+    let envs = compose.get_service_envs(&app1);
+    assert_eq!(
+        envs.unwrap_or(Vec::default()),
+        vec![
+            "PORT=8000",
+            "KAFKA_PORT=9092",
+            "DB_PORT=5432",
+            "TITLE=\"App 1\"",
+            "DESC=\"Desc 1\"",
+        ]
+    );
+    Ok(())
+}
+
+#[test]
 fn get_profiles() -> Result<(), Error> {
     let yaml = "
 services:

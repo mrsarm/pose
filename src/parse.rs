@@ -104,7 +104,7 @@ impl ComposeYaml {
                             }
                         } else if QUOTED_NUM_REGEX.captures(val).is_some() {
                             // remove unnecessary quotes
-                            let val = &val[1..val.len()];
+                            let val = &val[1..val.len() - 1];
                             format!("{env}={val}")
                         } else {
                             format!("{env}={val}")
