@@ -8,6 +8,7 @@ use std::path::Path;
 lazy_static! {
     static ref EMPTY_MAP: Mapping = Mapping::default();
     static ref ENV_NAME_REGEX: Regex = Regex::new(r"^\w+$").unwrap();
+    static ref QUOTED_NUM_REGEX: Regex = Regex::new(r"^'[0-9]+'$").unwrap();
 }
 
 pub struct ComposeYaml {
@@ -94,14 +95,19 @@ impl ComposeYaml {
                     .map(|(k, v)| {
                         let env = k.as_str().unwrap_or("".as_ref());
                         let val = to_string(v).unwrap_or("".to_string());
+                        let val = val.trim_end();
                         if val.contains(' ') {
                             if val.contains('"') {
-                                format!("{env}='{}'", val.trim_end())
+                                format!("{env}='{val}'")
                             } else {
-                                format!("{env}=\"{}\"", val.trim_end())
+                                format!("{env}=\"{val}\"")
                             }
+                        } else if QUOTED_NUM_REGEX.captures(val).is_some() {
+                            // remove unnecessary quotes
+                            let val = &val[1..val.len()];
+                            format!("{env}={val}")
                         } else {
-                            format!("{env}={}", val.trim_end())
+                            format!("{env}={val}")
                         }
                     })
                     .collect::<Vec<_>>(),
