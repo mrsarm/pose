@@ -162,7 +162,7 @@ pub fn get_compose_filename(
                 Ok(String::from(name))
             } else {
                 Err(format!(
-                    "{}: No such file or directory: '{}'",
+                    "{}: {}: no such file or directory",
                     "ERROR".red(),
                     name
                 ))

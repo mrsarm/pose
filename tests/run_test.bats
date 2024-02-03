@@ -23,13 +23,29 @@ setup() {
     assert_output --partial "postgres"
 }
 
+@test "can list services without docker" {
+    run target/debug/pose --no-docker -f tests/compose.yaml list services
+    assert_output --partial "app1"
+    assert_output --partial "app2"
+    assert_output --partial "postgres"
+}
+
 @test "can list services in one line" {
     run target/debug/pose -f tests/compose.yaml list -p oneline services
     assert_output --partial "app1 app2 postgres"
 }
 
 @test "can list images" {
-    run target/debug/pose -f tests/compose.yaml list images
+    run target/debug/pose --verbose -f tests/compose.yaml list images
+    assert_output --partial "DEBUG: docker compose -f tests/compose.yaml config"
+    assert_output --partial "another-image:2.0"
+    assert_output --partial "postgres:15"
+    assert_output --partial "some-image"
+}
+
+@test "can list images without docker" {
+    run target/debug/pose --verbose --no-docker -f tests/compose.yaml list images
+    refute_output --partial "DEBUG: docker compose -f tests/compose.yaml config"
     assert_output --partial "another-image:2.0"
     assert_output --partial "postgres:15"
     assert_output --partial "some-image"
@@ -37,6 +53,12 @@ setup() {
 
 @test "can list envs" {
     run target/debug/pose -f tests/compose.yaml list envs postgres
+    assert_output --partial "PORT=5432"
+    assert_output --partial "POSTGRES_PASSWORD=password"
+}
+
+@test "can list envs without docker" {
+    run target/debug/pose --no-docker -f tests/compose.yaml list envs postgres
     assert_output --partial "PORT=5432"
     assert_output --partial "POSTGRES_PASSWORD=password"
 }
@@ -59,9 +81,22 @@ setup() {
     assert_output --partial "does-not-exist.yaml: no such file or directory"
 }
 
+@test "can detect file does not exist without docker" {
+    run target/debug/pose --no-docker -f does-not-exist.yaml list services
+    assert_failure 14
+    assert_output --partial "does-not-exist.yaml: no such file or directory"
+}
+
 @test "can detect invalid file" {
     run target/debug/pose -f Makefile list services
     assert_failure 15
     assert_output --partial "ERROR: calling compose"
     assert_output --partial "yaml:"
+}
+
+@test "can detect invalid file without docker" {
+    run target/debug/pose --no-docker -f Makefile list services
+    assert_failure 15
+    refute_output --partial "ERROR: calling compose"
+    assert_output --partial "could not find expected ':'"
 }
