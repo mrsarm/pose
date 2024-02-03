@@ -1,0 +1,11 @@
+version: '3.7'
+
+services:
+  nginx:
+    image: nginx
+    ports:
+      - "8000:8000"
+
+volumes:
+  data:
+    driver: local

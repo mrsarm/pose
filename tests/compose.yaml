@@ -16,7 +16,6 @@ services:
       TITLE: "App 2"
     depends_on:
       - app1
-    profiles: [sec-services, another]
   postgres:
     image: postgres:15
     ports:
@@ -24,6 +23,8 @@ services:
     environment:
       - PORT=5432
       - POSTGRES_PASSWORD=password
+    volumes:
+        - data:/var/lib/postgresql/data
 
 volumes:
   data:

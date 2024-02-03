@@ -8,19 +8,66 @@ use std::{fs, process};
 
 //mod lib;
 //use crate::lib::{ComposeYaml, get_compose_filename};
-use docker_pose::{get_compose_filename, ComposeYaml, Verbosity};
+use docker_pose::{get_compose_filename, ComposeYaml, DockerCommand, Verbosity};
 
 fn main() {
     let args = Args::parse();
     let verbosity = args.get_verbosity();
-    let filename = get_compose_filename(&args.filename, verbosity).unwrap_or_else(|err| {
-        eprintln!("{}: {}", "ERROR".red(), err);
-        process::exit(10);
-    });
-    let yaml_content = fs::read_to_string(filename).unwrap_or_else(|err| {
-        eprintln!("{}: reading compose file: {}", "ERROR".red(), err);
-        process::exit(11);
-    });
+    let filenames = match args.filename.as_deref() {
+        None => None,
+        Some(f) => vec![f].into(),
+    };
+    let command = DockerCommand::new(verbosity.clone());
+    let result_output = command.call_compose_config(filenames, false, false);
+    let yaml_content = match result_output {
+        Ok(output) => {
+            // docker was successfully called by pose, but docker compose
+            // could either succeed or fail executing its task
+            match output.status.success() {
+                true => {
+                    // success !
+                    if !output.stderr.is_empty() {
+                        // although, there may be warnings sent to the stderr
+                        eprintln!(
+                            "{}: the following are warnings from compose:",
+                            "WARN".yellow()
+                        );
+                        command.write_stderr(&output.stderr);
+                    }
+                    String::from_utf8(output.stdout).unwrap_or_else(|e| {
+                        eprintln!(
+                            "{}: deserializing {} compose output: {}",
+                            "ERROR".red(),
+                            command.docker_bin,
+                            e,
+                        );
+                        process::exit(17);
+                    })
+                }
+                false => {
+                    eprintln!("{}: calling compose", "ERROR".red());
+                    command.write_stderr(&output.stderr);
+                    process::exit(command.exit_code(&output));
+                }
+            }
+        }
+        Err(e) => {
+            // docker couldn't be called by pose or the OS
+            eprintln!("{}: calling compose: {}", "ERROR".red(), e);
+            eprintln!(
+                "{}: parsing will be executed without compose",
+                "WARN".yellow()
+            );
+            let filename = get_compose_filename(&args.filename, verbosity).unwrap_or_else(|err| {
+                eprintln!("{}: {}", "ERROR".red(), err);
+                process::exit(10);
+            });
+            fs::read_to_string(filename).unwrap_or_else(|err| {
+                eprintln!("{}: reading compose file: {}", "ERROR".red(), err);
+                process::exit(11);
+            })
+        }
+    };
     let compose = ComposeYaml::new(&yaml_content).unwrap_or_else(|err| {
         if err.to_string().starts_with("invalid type") {
             eprintln!(

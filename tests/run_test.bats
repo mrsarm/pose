@@ -54,7 +54,14 @@ setup() {
 }
 
 @test "can detect file does not exist" {
-    run target/debug/pose -f doesnotexist.yaml list services
-    assert_failure 10
-    assert_output --partial "ERROR: No such file or directory: 'doesnotexist.yaml'"
+    run target/debug/pose -f does-not-exist.yaml list services
+    assert_failure 14
+    assert_output --partial "does-not-exist.yaml: no such file or directory"
+}
+
+@test "can detect invalid file" {
+    run target/debug/pose -f Makefile list services
+    assert_failure 15
+    assert_output --partial "ERROR: calling compose"
+    assert_output --partial "yaml:"
 }
