@@ -261,7 +261,7 @@ services:
     image: app:1.0
     ";
     let compose = ComposeYaml::new(&yaml)?;
-    let images = compose.get_images();
+    let images = compose.get_images(None);
     assert_eq!(
         images,
         Some(vec![
@@ -276,6 +276,32 @@ services:
 }
 
 #[test]
+fn get_images_filter_by_tag() -> Result<(), Error> {
+    let yaml = "
+services:
+  app:
+    image: app
+  web:
+    image: namespace.server.com/image:master
+  psql:
+    image: postgres:16.1
+  nginx:
+    image: nginx:master
+  app-provision:
+    image: app
+  app-with-another-tag:
+    image: app:1.0
+    ";
+    let compose = ComposeYaml::new(&yaml)?;
+    let images = compose.get_images(Some("master"));
+    assert_eq!(
+        images,
+        Some(vec!["namespace.server.com/image:master", "nginx:master"])
+    );
+    Ok(())
+}
+
+#[test]
 fn get_images_none() -> Result<(), Error> {
     let yaml = "
 volumes:
@@ -283,7 +309,7 @@ volumes:
     driver: local
     ";
     let compose = ComposeYaml::new(&yaml)?;
-    let images = compose.get_images();
+    let images = compose.get_images(None);
     assert!(images.is_none());
     Ok(())
 }

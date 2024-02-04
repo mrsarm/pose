@@ -53,13 +53,25 @@ impl ComposeYaml {
         Some(profiles)
     }
 
-    pub fn get_images(&self) -> Option<Vec<&str>> {
+    pub fn get_images(&self, filter_by_tag: Option<&str>) -> Option<Vec<&str>> {
         let services = self.get_services()?;
         let mut images = services
             .values()
             .flat_map(|v| v.as_mapping())
             .flat_map(|s| s.get("image"))
             .flat_map(|p| p.as_str())
+            .filter(|image| match filter_by_tag {
+                None => true,
+                Some(tag) => {
+                    let image_parts = image.split(':').collect::<Vec<_>>();
+                    let image_tag = if image_parts.len() > 1 {
+                        *image_parts.get(1).unwrap()
+                    } else {
+                        "latest"
+                    };
+                    tag == image_tag
+                }
+            })
             .collect::<Vec<_>>();
         images.sort();
         images.dedup();

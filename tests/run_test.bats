@@ -66,6 +66,15 @@ setup() {
     assert_output --partial "some-image"
 }
 
+@test "can list images with tag filter" {
+    run target/debug/pose --verbose -f tests/compose.yaml list images --filter tag=2.0
+    assert_success
+    assert_output --partial "DEBUG: docker compose -f tests/compose.yaml config"
+    assert_output --partial "another-image:2.0"
+    refute_output --partial "postgres:15"
+    refute_output --partial "some-image"
+}
+
 @test "can list images without docker" {
     run target/debug/pose --verbose --no-docker -f tests/compose.yaml list images
     assert_success

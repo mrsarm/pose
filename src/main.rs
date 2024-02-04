@@ -102,19 +102,39 @@ fn main() {
                     envs.iter().for_each(|env| println!("{}", env));
                 }
             }
-            Objects::Images | Objects::Profiles => {
-                let op = if object == Objects::Profiles {
-                    compose.get_profiles_names()
-                } else {
-                    compose.get_images()
-                };
+            Objects::Profiles => {
+                let op = compose.get_profiles_names();
+                match op {
+                    None => {
+                        eprintln!("{}: No profiles section found", "ERROR".red());
+                        process::exit(15);
+                    }
+                    Some(profiles) => {
+                        print_names(profiles.into_iter(), pretty);
+                    }
+                }
+            }
+            Objects::Images { filter } => {
+                let tag = filter.as_ref().map(|f| {
+                    if let Some(val) = f.strip_prefix("tag=") {
+                        val
+                    } else {
+                        eprintln!(
+                            "{}: only '{}' filter supported",
+                            "ERROR".red(),
+                            "tag=".yellow()
+                        );
+                        process::exit(2);
+                    }
+                });
+                let op = compose.get_images(tag);
                 match op {
                     None => {
                         eprintln!("{}: No services section found", "ERROR".red());
                         process::exit(15);
                     }
-                    Some(profiles) => {
-                        print_names(profiles.into_iter(), pretty);
+                    Some(images) => {
+                        print_names(images.into_iter(), pretty);
                     }
                 }
             }
@@ -215,7 +235,11 @@ enum Objects {
     /// List services
     Services,
     /// List images
-    Images,
+    Images {
+        /// filter by a property, currently only supported tag=TAG
+        #[arg(short, long)]
+        filter: Option<String>,
+    },
     /// List service's depends_on
     Depends { service: String },
     /// List volumes
