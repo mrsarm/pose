@@ -173,10 +173,9 @@ pub fn get_compose_filename(
             let files_count = files.clone().count();
             match files_count {
                 0 => Err(format!(
-                    "{}: Can't find a suitable configuration file in this directory.\n\
+                    "Can't find a suitable configuration file in this directory.\n\
                     Are you in the right directory?\n\n\
                     Supported filenames: {}",
-                    "ERROR".red(),
                     COMPOSE_PATHS.into_iter().collect::<Vec<&str>>().join(", ")
                 )),
                 1 => {
