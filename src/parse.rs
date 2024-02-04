@@ -141,15 +141,11 @@ impl ComposeYaml {
 
 // where to look for the compose file when the user
 // don't provide a path
-static COMPOSE_PATHS: [&str; 8] = [
+static COMPOSE_PATHS: [&str; 4] = [
     "compose.yaml",
     "compose.yml",
     "docker-compose.yaml",
     "docker-compose.yml",
-    "docker/compose.yaml",
-    "docker/compose.yml",
-    "docker/docker-compose.yaml",
-    "docker/docker-compose.yml",
 ];
 
 pub fn get_compose_filename(
