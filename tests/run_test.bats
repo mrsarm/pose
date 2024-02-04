@@ -5,11 +5,13 @@ setup() {
 
 @test "can run --version" {
     run target/debug/pose --version
+    assert_success
     assert_output --partial 'docker-pose 0.3'
 }
 
 @test "can run --help" {
     run target/debug/pose --help
+    assert_success
     assert_output --partial 'Command line tool to play with 🐳 Docker Compose files.'
     assert_output --partial 'list  List objects found in the compose file'
     # ...
@@ -18,6 +20,7 @@ setup() {
 
 @test "can list services" {
     run target/debug/pose -f tests/compose.yaml list services
+    assert_success
     assert_output --partial "app1"
     assert_output --partial "app2"
     assert_output --partial "postgres"
@@ -25,6 +28,7 @@ setup() {
 
 @test "can list services without docker" {
     run target/debug/pose --no-docker -f tests/compose.yaml list services
+    assert_success
     assert_output --partial "app1"
     assert_output --partial "app2"
     assert_output --partial "postgres"
@@ -32,11 +36,13 @@ setup() {
 
 @test "can list services in one line" {
     run target/debug/pose -f tests/compose.yaml list -p oneline services
+    assert_success
     assert_output --partial "app1 app2 postgres"
 }
 
 @test "can list images" {
     run target/debug/pose --verbose -f tests/compose.yaml list images
+    assert_success
     assert_output --partial "DEBUG: docker compose -f tests/compose.yaml config"
     assert_output --partial "another-image:2.0"
     assert_output --partial "postgres:15"
@@ -45,6 +51,7 @@ setup() {
 
 @test "can list images without docker" {
     run target/debug/pose --verbose --no-docker -f tests/compose.yaml list images
+    assert_success
     refute_output --partial "DEBUG: docker compose -f tests/compose.yaml config"
     assert_output --partial "another-image:2.0"
     assert_output --partial "postgres:15"
@@ -53,12 +60,14 @@ setup() {
 
 @test "can list envs" {
     run target/debug/pose -f tests/compose.yaml list envs postgres
+    assert_success
     assert_output --partial "PORT=5432"
     assert_output --partial "POSTGRES_PASSWORD=password"
 }
 
 @test "can list envs without docker" {
     run target/debug/pose --no-docker -f tests/compose.yaml list envs postgres
+    assert_success
     assert_output --partial "PORT=5432"
     assert_output --partial "POSTGRES_PASSWORD=password"
 }
