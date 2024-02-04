@@ -6,7 +6,7 @@ use std::env;
 #[test]
 fn run_docker_version() {
     let command = DockerCommand::new(Verbosity::default());
-    let output = command.call_cmd(vec!["version"], false, true).unwrap();
+    let output = command.call_cmd(&["version"], false, true).unwrap();
     assert!(output.status.success());
     let stdout = String::from_utf8(output.stdout).unwrap();
     assert!(stdout.to_lowercase().contains("version"));
@@ -17,7 +17,7 @@ fn run_docker_compose_version() {
     for verbosity in [Verbosity::Quiet, Verbose] {
         let command = DockerCommand::new(verbosity);
         let output = command
-            .call_cmd(vec!["compose", "version"], false, true)
+            .call_cmd(&["compose", "version"], false, true)
             .unwrap();
         assert!(output.status.success());
         let stdout = String::from_utf8(output.stdout).unwrap();
@@ -30,7 +30,7 @@ fn run_docker_compose_version() {
 fn run_missed_docker() {
     env::set_var("DOCKER_BIN", "docker1234");
     let command = DockerCommand::new(Verbosity::default());
-    let result = command.call_cmd(vec!["version"], false, false);
+    let result = command.call_cmd(&["version"], false, false);
     assert!(result.is_err()); // the message vary according to the OS
     env::set_var("DOCKER_BIN", "docker");
 }
@@ -39,11 +39,7 @@ fn run_missed_docker() {
 fn run_docker_missed_file() {
     let command = DockerCommand::new(Verbosity::default());
     let output = command
-        .call_cmd(
-            vec!["compose", "-f", "doesnotexist.yaml", "up"],
-            false,
-            true,
-        )
+        .call_cmd(&["compose", "-f", "doesnotexist.yaml", "up"], false, true)
         .unwrap();
     assert!(!output.status.success());
     let stderr = String::from_utf8(output.stderr).unwrap();
@@ -65,11 +61,7 @@ fn run_docker_missed_file() {
 fn run_docker_config_multiple_files() {
     let command = DockerCommand::new(Verbose);
     let output = command
-        .call_compose_config(
-            Some(vec!["tests/compose.yaml", "tests/another.yml"]),
-            false,
-            true,
-        )
+        .call_compose_config(&["tests/compose.yaml", "tests/another.yml"], false, true)
         .unwrap();
     assert!(output.status.success());
     let stdout = String::from_utf8(output.stdout).unwrap();
@@ -82,7 +74,7 @@ fn run_docker_config_multiple_files() {
 fn run_docker_config_file_not_found() {
     let command = DockerCommand::new(Verbose);
     let output = command
-        .call_compose_config(Some(vec!["does-not-exist.yml"]), false, true)
+        .call_compose_config(&["does-not-exist.yml"], false, true)
         .unwrap();
     assert!(!output.status.success());
     let stderr = String::from_utf8(output.stderr).unwrap();

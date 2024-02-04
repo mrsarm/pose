@@ -15,7 +15,7 @@ setup() {
     assert_output --partial 'Command line tool to play with 🐳 Docker Compose files.'
     assert_output --partial 'list  List objects found in the compose file'
     # ...
-    assert_output --partial '-f, --filename <FILENAME>'
+    assert_output --partial '-f, --file <FILENAMES>'
 }
 
 @test "can list services" {
@@ -24,6 +24,7 @@ setup() {
     assert_output --partial "app1"
     assert_output --partial "app2"
     assert_output --partial "postgres"
+    refute_output --partial "nginx"
 }
 
 @test "can list services without docker" {
@@ -38,6 +39,22 @@ setup() {
     run target/debug/pose -f tests/compose.yaml list -p oneline services
     assert_success
     assert_output --partial "app1 app2 postgres"
+}
+
+@test "can list services from multiple sources" {
+    run target/debug/pose -f tests/compose.yaml -f tests/another.yml list services
+    assert_success
+    assert_output --partial "app1"
+    assert_output --partial "app2"
+    assert_output --partial "nginx"
+    assert_output --partial "postgres"
+}
+
+@test "cannot list services from multiple sources without docker" {
+    run target/debug/pose --no-docker -f tests/compose.yaml -f tests/another.yml list services
+    assert_failure 2
+    refute_output --partial "app1"
+    assert_output --partial "ERROR: multiple '--file' arguments cannot be used with '--no-docker'"
 }
 
 @test "can list images" {

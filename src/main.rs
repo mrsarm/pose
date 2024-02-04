@@ -13,15 +13,24 @@ use docker_pose::{get_compose_filename, ComposeYaml, DockerCommand, Verbosity};
 fn main() {
     let args = Args::parse();
     let verbosity = args.get_verbosity();
-    let filenames = match args.filename.as_deref() {
-        None => None,
-        Some(f) => vec![f].into(),
-    };
+    if args.filenames.len() > 1 && args.no_docker {
+        eprintln!(
+            "{}: multiple '{}' arguments cannot be used with '{}'",
+            "ERROR".red(),
+            "--file".yellow(),
+            "--no-docker".yellow()
+        );
+        process::exit(2);
+    }
     let yaml_content = match args.no_docker {
-        true => get_yml_content(&args.filename, verbosity),
+        true => get_yml_content(args.filenames.first().map(AsRef::as_ref), verbosity),
         false => {
             let command = DockerCommand::new(verbosity.clone());
-            let result_output = command.call_compose_config(filenames, false, false);
+            let result_output = command.call_compose_config(
+                &args.filenames.iter().map(AsRef::as_ref).collect::<Vec<_>>(),
+                false,
+                false,
+            );
             match result_output {
                 Ok(output) => {
                     // docker was successfully called by pose, but docker compose
@@ -61,7 +70,7 @@ fn main() {
                         "{}: parsing will be executed without compose",
                         "WARN".yellow()
                     );
-                    get_yml_content(&args.filename, verbosity)
+                    get_yml_content(args.filenames.first().map(AsRef::as_ref), verbosity)
                 }
             }
         }
@@ -140,7 +149,7 @@ fn get_service<'a>(compose: &'a ComposeYaml, service_name: &str) -> &'a Mapping 
     }
 }
 
-pub fn get_yml_content(filename: &Option<String>, verbosity: Verbosity) -> String {
+pub fn get_yml_content(filename: Option<&str>, verbosity: Verbosity) -> String {
     let filename = get_compose_filename(filename, verbosity).unwrap_or_else(|err| {
         eprintln!("{}: {}", "ERROR".red(), err);
         if err.contains("no such file or directory") {
@@ -160,8 +169,8 @@ struct Args {
     #[command(subcommand)]
     command: Commands,
 
-    #[arg(short, long)]
-    filename: Option<String>,
+    #[arg(short, long = "file")]
+    filenames: Vec<String>,
 
     /// Increase verbosity
     #[arg(long, conflicts_with = "quiet")]

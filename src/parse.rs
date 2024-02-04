@@ -153,7 +153,7 @@ static COMPOSE_PATHS: [&str; 8] = [
 ];
 
 pub fn get_compose_filename(
-    filename: &Option<String>,
+    filename: Option<&str>,
     verbosity: Verbosity,
 ) -> Result<String, String> {
     match filename {

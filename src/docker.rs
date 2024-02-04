@@ -38,12 +38,12 @@ impl DockerCommand {
 
     pub fn call_cmd(
         &self,
-        args: Vec<&str>,
+        args: &[&str],
         output_stdout: bool,
         output_stderr: bool,
     ) -> io::Result<Output> {
         if matches!(self.verbosity, Verbosity::Verbose) {
-            eprintln!("{}: {}", "DEBUG".green(), self.call_to_string(&args));
+            eprintln!("{}: {}", "DEBUG".green(), self.call_to_string(args));
         }
         let mut binding = Command::new(&self.docker_bin);
         let mut command = binding.args(args);
@@ -61,30 +61,36 @@ impl DockerCommand {
     pub fn call_compose_cmd(
         &self,
         cmd: &str,
-        filenames: Option<Vec<&str>>,
-        args: Option<Vec<&str>>,
+        filenames: &[&str],
+        args: &[&str],
         output_stdout: bool,
         output_stderr: bool,
     ) -> io::Result<Output> {
         let mut cmd_args = vec!["compose"];
-        for filename in filenames.unwrap_or_default() {
+        for filename in filenames {
             cmd_args.push("-f");
             cmd_args.push(filename);
         }
-        for arg in args.unwrap_or_default() {
+        for arg in args {
             cmd_args.push(arg);
         }
         cmd_args.push(cmd);
-        self.call_cmd(cmd_args, output_stdout, output_stderr)
+        self.call_cmd(&cmd_args, output_stdout, output_stderr)
     }
 
     pub fn call_compose_config(
         &self,
-        filenames: Option<Vec<&str>>,
+        filenames: &[&str],
         output_stdout: bool,
         output_stderr: bool,
     ) -> io::Result<Output> {
-        self.call_compose_cmd("config", filenames, None, output_stdout, output_stderr)
+        self.call_compose_cmd(
+            "config",
+            filenames,
+            &Vec::default(),
+            output_stdout,
+            output_stderr,
+        )
     }
 
     pub fn write_stderr(&self, stderr: &[u8]) {
