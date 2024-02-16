@@ -1,4 +1,4 @@
-#[derive(Debug, Default, Clone)]
+#[derive(Clone, Debug, Default)]
 pub enum Verbosity {
     Quiet,
     #[default]

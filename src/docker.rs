@@ -93,6 +93,10 @@ impl DockerCommand {
         )
     }
 
+    pub fn get_manifest_inspect(&self, image: &str) -> io::Result<Output> {
+        self.call_cmd(&["manifest", "inspect", "--insecure", image], false, false)
+    }
+
     pub fn write_stderr(&self, stderr: &[u8]) {
         io::stderr().write_all(stderr).unwrap_or_else(|e| {
             eprintln!(

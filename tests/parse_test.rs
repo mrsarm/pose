@@ -1,4 +1,4 @@
-use docker_pose::ComposeYaml;
+use docker_pose::{ComposeYaml, RemoteTag, Verbosity};
 use pretty_assertions::assert_eq;
 use serde_yaml::Error;
 
@@ -261,15 +261,15 @@ services:
     image: app:1.0
     ";
     let compose = ComposeYaml::new(&yaml)?;
-    let images = compose.get_images(None);
+    let images = compose.get_images(None, None);
     assert_eq!(
         images,
         Some(vec![
-            "app",     // used twice, but included once
-            "app:1.0", // same image but with different version
-            "namespace.server.com/image:master",
-            "nginx:stable",
-            "postgres:16.1",
+            "app".to_string(),     // used twice, but included once
+            "app:1.0".to_string(), // same image but with different version
+            "namespace.server.com/image:master".to_string(),
+            "nginx:stable".to_string(),
+            "postgres:16.1".to_string(),
         ])
     );
     Ok(())
@@ -293,10 +293,48 @@ services:
     image: app:1.0
     ";
     let compose = ComposeYaml::new(&yaml)?;
-    let images = compose.get_images(Some("master"));
+    let images = compose.get_images(Some("master"), None);
     assert_eq!(
         images,
-        Some(vec!["namespace.server.com/image:master", "nginx:master"])
+        Some(vec![
+            "namespace.server.com/image:master".to_string(),
+            "nginx:master".to_string(),
+        ])
+    );
+    Ok(())
+}
+
+// The following is commented to not delay tests execution, uncomment to execute
+// #[test]
+#[allow(dead_code)]
+fn get_images_with_remote_tag() -> Result<(), Error> {
+    let yaml = "
+services:
+  postgres:
+    image: postgres:16.1
+  psql:
+    image: postgres:16.1
+  nginx:
+    image: nginx
+  rabbitmq:
+    image: rabbitmq:3
+    ";
+    let compose = ComposeYaml::new(&yaml)?;
+    let images = compose.get_images(
+        None,
+        Some(RemoteTag {
+            remote_tag: "16.2".to_string(),
+            ignore_unauthorized: true,
+            verbosity: Verbosity::default(),
+        }),
+    );
+    assert_eq!(
+        images,
+        Some(vec![
+            "nginx".to_string(),
+            "postgres:16.2".to_string(),
+            "rabbitmq:3".to_string(),
+        ])
     );
     Ok(())
 }
@@ -309,7 +347,7 @@ volumes:
     driver: local
     ";
     let compose = ComposeYaml::new(&yaml)?;
-    let images = compose.get_images(None);
+    let images = compose.get_images(None, None);
     assert!(images.is_none());
     Ok(())
 }

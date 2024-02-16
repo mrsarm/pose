@@ -1,9 +1,11 @@
 use crate::verbose::Verbosity;
+use crate::DockerCommand;
 use colored::*;
 use regex::Regex;
 use serde_yaml::{to_string, Error, Mapping, Value};
 use std::collections::BTreeMap;
 use std::path::Path;
+use std::process;
 
 lazy_static! {
     static ref EMPTY_MAP: Mapping = Mapping::default();
@@ -15,10 +17,24 @@ pub struct ComposeYaml {
     map: BTreeMap<String, Value>,
 }
 
+pub struct RemoteTag {
+    /// replace tag with remote tag if exists
+    pub remote_tag: String,
+    /// docker may require to be logged in to fetch some images info
+    pub ignore_unauthorized: bool,
+    /// verbosity used when fetching remote images info
+    pub verbosity: Verbosity,
+}
+
 impl ComposeYaml {
     pub fn new(yaml: &str) -> Result<ComposeYaml, Error> {
         let map = serde_yaml::from_str(yaml)?;
         Ok(ComposeYaml { map })
+    }
+
+    pub fn to_string(&self) -> Result<String, Error> {
+        let yaml_string = to_string(&self.map)?;
+        Ok(yaml_string)
     }
 
     pub fn get_root_element(&self, element_name: &str) -> Option<&Mapping> {
@@ -53,7 +69,11 @@ impl ComposeYaml {
         Some(profiles)
     }
 
-    pub fn get_images(&self, filter_by_tag: Option<&str>) -> Option<Vec<&str>> {
+    pub fn get_images(
+        &self,
+        filter_by_tag: Option<&str>,
+        remote_tag: Option<RemoteTag>,
+    ) -> Option<Vec<String>> {
         let services = self.get_services()?;
         let mut images = services
             .values()
@@ -75,7 +95,48 @@ impl ComposeYaml {
             .collect::<Vec<_>>();
         images.sort();
         images.dedup();
-        Some(images)
+        if let Some(remote) = remote_tag {
+            let mut updated_images: Vec<String> = Vec::new();
+            let command = DockerCommand::new(remote.verbosity);
+            for image in &images {
+                let image_parts = image.split(':').collect::<Vec<_>>();
+                let image_name = *image_parts.first().unwrap();
+                let remote_image = format!("{}:{}", image_name, remote.remote_tag);
+                let inspect_output =
+                    command
+                        .get_manifest_inspect(&remote_image)
+                        .unwrap_or_else(|e| {
+                            eprintln!(
+                                "{}: fetching image manifest for {}: {}",
+                                "ERROR".red(),
+                                remote_image,
+                                e
+                            );
+                            process::exit(151);
+                        });
+                if inspect_output.status.success() {
+                    updated_images.push(remote_image);
+                } else {
+                    let exit_code = command.exit_code(&inspect_output);
+                    let stderr = String::from_utf8(inspect_output.stderr).unwrap();
+                    if stderr.contains("no such manifest")
+                        || (remote.ignore_unauthorized && stderr.contains("unauthorized:"))
+                    {
+                        updated_images.push(image.to_string());
+                    } else {
+                        eprintln!(
+                            "{}: fetching image manifest for {}: {}",
+                            "ERROR".red(),
+                            remote_image,
+                            stderr
+                        );
+                        process::exit(exit_code);
+                    }
+                }
+            }
+            return Some(updated_images);
+        }
+        Some(images.iter().map(|i| i.to_string()).collect::<Vec<_>>())
     }
 
     pub fn get_service(&self, service_name: &str) -> Option<&Mapping> {

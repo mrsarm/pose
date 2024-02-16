@@ -8,7 +8,7 @@ use std::{fs, process};
 
 //mod lib;
 //use crate::lib::{ComposeYaml, get_compose_filename};
-use docker_pose::{get_compose_filename, ComposeYaml, DockerCommand, Verbosity};
+use docker_pose::{get_compose_filename, ComposeYaml, DockerCommand, RemoteTag, Verbosity};
 
 fn main() {
     let args = Args::parse();
@@ -23,7 +23,7 @@ fn main() {
         process::exit(2);
     }
     let yaml_content = match args.no_docker {
-        true => get_yml_content(args.filenames.first().map(AsRef::as_ref), verbosity),
+        true => get_yml_content(args.filenames.first().map(AsRef::as_ref), verbosity.clone()),
         false => {
             let command = DockerCommand::new(verbosity.clone());
             let result_output = command.call_compose_config(
@@ -70,7 +70,7 @@ fn main() {
                         "{}: parsing will be executed without compose",
                         "WARN".yellow()
                     );
-                    get_yml_content(args.filenames.first().map(AsRef::as_ref), verbosity)
+                    get_yml_content(args.filenames.first().map(AsRef::as_ref), verbosity.clone())
                 }
             }
         }
@@ -114,7 +114,11 @@ fn main() {
                     }
                 }
             }
-            Objects::Images { filter } => {
+            Objects::Images {
+                filter,
+                remote_tag,
+                ignore_unauthorized,
+            } => {
                 let tag = filter.as_ref().map(|f| {
                     if let Some(val) = f.strip_prefix("tag=") {
                         val
@@ -127,14 +131,20 @@ fn main() {
                         process::exit(2);
                     }
                 });
-                let op = compose.get_images(tag);
+                let remote_tag = remote_tag.map(|tag| RemoteTag {
+                    ignore_unauthorized,
+                    remote_tag: tag,
+                    verbosity: verbosity.clone(),
+                });
+                let op = compose.get_images(tag, remote_tag);
                 match op {
                     None => {
                         eprintln!("{}: No services section found", "ERROR".red());
                         process::exit(15);
                     }
                     Some(images) => {
-                        print_names(images.into_iter(), pretty);
+                        let images_list = images.iter().map(|i| i.as_str()).collect::<Vec<_>>();
+                        print_names(images_list.into_iter(), pretty);
                     }
                 }
             }
@@ -239,6 +249,12 @@ enum Objects {
         /// filter by a property, currently only supported tag=TAG
         #[arg(short, long)]
         filter: Option<String>,
+        /// use remote tag instead of the one set in the file if exists
+        #[arg(short, long)]
+        remote_tag: Option<String>,
+        /// ignore unauthorized errors from docker when fetching remote tags info
+        #[arg(long)]
+        ignore_unauthorized: bool,
     },
     /// List service's depends_on
     Depends { service: String },
