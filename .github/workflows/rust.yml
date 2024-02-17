@@ -24,3 +24,5 @@ jobs:
       run: make test
     - name: Run shell tests
       run: make test-cmd
+    - name: Run integration pose → docker → network tests
+      run: make test-integration

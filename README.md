@@ -94,8 +94,8 @@ $ cargo install docker-pose
 (Yes, the package name in Crates.io is `docker-pose`, not `pose`).
 
 Or from the source, after cloning the source code, go to the folder and
-execute ` cargo install --path .` (normally it will install the binary
-in the `~/.cargo/bin` folder).
+execute ` cargo install --path .` or `make install` (normally it will
+install the binary in the `~/.cargo/bin` folder).
 
 ### Binary Download
 
@@ -131,9 +131,20 @@ There is a `Makefile` that can be used to execute most of the development tasks,
 like `make release` that executes `cargo build --release`, so check out the file
 even if you don't use `make` to see useful commands.
 
-Rust tests with `make test`, but there are also shell tests written in Shell script
-using the test framework [Bats](https://bats-core.readthedocs.io). To execute the
-bash tests: `make test-cmd`, or `make test-all` to run all the tests at once.
+#### Tests
+
+- Rust tests: `make test`.
+- Linter: `make lint`.
+- Format checker: `make fmt-check`.
+- Shell tests: `make test-cmd`. They are written in Shell script using 
+  the test framework [Bats](https://bats-core.readthedocs.io).
+- Rust integration tests: `make test-integration`. **Very slow**, they execute
+  tests to check functionality that involves _pose → docker → docker registry_.
+- Run all the tests at once: `make test-all-fast`, including all the above,
+  except integrations one.
+- Run **all the tests** at once: `make test-all`, include all tests, it's the
+  equivalent of what CI executes on each push to GitHub.
+
 
 If you get an error like `make: ./tests/bats/bin/bats: Command not found`,
 it’s because you cloned the project without the `--recurse-submodules` git argument.

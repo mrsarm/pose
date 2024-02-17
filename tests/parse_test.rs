@@ -305,8 +305,8 @@ services:
 }
 
 // The following is commented to not delay tests execution, uncomment to execute
-// #[test]
-#[allow(dead_code)]
+#[test]
+#[ignore]
 fn get_images_with_remote_tag() -> Result<(), Error> {
     let yaml = "
 services:

@@ -1,4 +1,4 @@
-.PHONY : test test-cmd test-all fmt-check lint
+.PHONY : test test-integration test-cmd test-all-fast test-all fmt-check lint
 .DEFAULT_GOAL := release
 
 clean:
@@ -19,6 +19,9 @@ install:
 test:
 	cargo test
 
+test-integration:
+	cargo test -- --ignored
+
 lint:
 	cargo clippy -- -D warnings
 
@@ -28,4 +31,6 @@ fmt-check:
 test-cmd: build
 	./tests/bats/bin/bats tests/run_test.bats
 
-test-all: lint fmt-check test test-cmd
+test-all-fast: lint fmt-check test test-cmd
+
+test-all: test-all-fast test-integration
