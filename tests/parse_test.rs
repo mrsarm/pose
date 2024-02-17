@@ -1,4 +1,4 @@
-use docker_pose::{ComposeYaml, RemoteTag, Verbosity};
+use docker_pose::ComposeYaml;
 use pretty_assertions::assert_eq;
 use serde_yaml::Error;
 
@@ -299,41 +299,6 @@ services:
         Some(vec![
             "namespace.server.com/image:master".to_string(),
             "nginx:master".to_string(),
-        ])
-    );
-    Ok(())
-}
-
-// The following is commented to not delay tests execution, uncomment to execute
-#[test]
-#[ignore]
-fn get_images_with_remote_tag() -> Result<(), Error> {
-    let yaml = "
-services:
-  postgres:
-    image: postgres:16.1
-  psql:
-    image: postgres:16.1
-  nginx:
-    image: nginx
-  rabbitmq:
-    image: rabbitmq:3
-    ";
-    let compose = ComposeYaml::new(&yaml)?;
-    let images = compose.get_images(
-        None,
-        Some(RemoteTag {
-            remote_tag: "16.2".to_string(),
-            ignore_unauthorized: true,
-            verbosity: Verbosity::default(),
-        }),
-    );
-    assert_eq!(
-        images,
-        Some(vec![
-            "nginx".to_string(),
-            "postgres:16.2".to_string(),
-            "rabbitmq:3".to_string(),
         ])
     );
     Ok(())

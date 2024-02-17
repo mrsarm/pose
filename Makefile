@@ -20,6 +20,7 @@ test:
 	cargo test
 
 test-integration:
+	# Run slow tests pose -> docker -> docker registry
 	cargo test -- --ignored
 
 lint:

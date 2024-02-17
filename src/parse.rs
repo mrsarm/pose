@@ -20,7 +20,9 @@ pub struct ComposeYaml {
 pub struct RemoteTag {
     /// replace tag with remote tag if exists
     pub remote_tag: String,
-    /// docker may require to be logged in to fetch some images info
+    /// don't replace with remote tag unless this regex match the image name / tag
+    pub remote_tag_filter: Option<Regex>,
+    /// docker may require to be logged-in to fetch some images info
     pub ignore_unauthorized: bool,
     /// verbosity used when fetching remote images info
     pub verbosity: Verbosity,
@@ -97,13 +99,18 @@ impl ComposeYaml {
         images.dedup();
         if let Some(remote) = remote_tag {
             let mut updated_images: Vec<String> = Vec::new();
-            let command = DockerCommand::new(remote.verbosity);
+            let command = DockerCommand::new(remote.verbosity.clone());
             for image in &images {
-                let image_parts = image.split(':').collect::<Vec<_>>();
-                let image_name = *image_parts.first().unwrap();
-                let remote_image = format!("{}:{}", image_name, remote.remote_tag);
-                let inspect_output =
-                    command
+                if remote
+                    .remote_tag_filter
+                    .as_ref()
+                    .map(|r| r.is_match(image))
+                    .unwrap_or(true)
+                {
+                    let image_parts = image.split(':').collect::<Vec<_>>();
+                    let image_name = *image_parts.first().unwrap();
+                    let remote_image = format!("{}:{}", image_name, remote.remote_tag);
+                    let inspect_output = command
                         .get_manifest_inspect(&remote_image)
                         .unwrap_or_else(|e| {
                             eprintln!(
@@ -114,24 +121,34 @@ impl ComposeYaml {
                             );
                             process::exit(151);
                         });
-                if inspect_output.status.success() {
-                    updated_images.push(remote_image);
-                } else {
-                    let exit_code = command.exit_code(&inspect_output);
-                    let stderr = String::from_utf8(inspect_output.stderr).unwrap();
-                    if stderr.contains("no such manifest")
-                        || (remote.ignore_unauthorized && stderr.contains("unauthorized:"))
-                    {
-                        updated_images.push(image.to_string());
+                    if inspect_output.status.success() {
+                        if matches!(remote.verbosity, Verbosity::Verbose) {
+                            eprintln!(
+                                "{}: remote image {} found",
+                                "DEBUG".green(),
+                                remote_image.yellow()
+                            );
+                        }
+                        updated_images.push(remote_image);
                     } else {
-                        eprintln!(
-                            "{}: fetching image manifest for {}: {}",
-                            "ERROR".red(),
-                            remote_image,
-                            stderr
-                        );
-                        process::exit(exit_code);
+                        let exit_code = command.exit_code(&inspect_output);
+                        let stderr = String::from_utf8(inspect_output.stderr).unwrap();
+                        if stderr.contains("no such manifest")
+                            || (remote.ignore_unauthorized && stderr.contains("unauthorized:"))
+                        {
+                            updated_images.push(image.to_string());
+                        } else {
+                            eprintln!(
+                                "{}: fetching image manifest for {}: {}",
+                                "ERROR".red(),
+                                remote_image,
+                                stderr
+                            );
+                            process::exit(exit_code);
+                        }
                     }
+                } else {
+                    updated_images.push(image.to_string());
                 }
             }
             return Some(updated_images);

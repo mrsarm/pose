@@ -8,7 +8,10 @@ use std::{fs, process};
 
 //mod lib;
 //use crate::lib::{ComposeYaml, get_compose_filename};
-use docker_pose::{get_compose_filename, ComposeYaml, DockerCommand, RemoteTag, Verbosity};
+use docker_pose::{
+    get_compose_filename, unwrap_filter_regex, unwrap_filter_tag, ComposeYaml, DockerCommand,
+    RemoteTag, Verbosity,
+};
 
 fn main() {
     let args = Args::parse();
@@ -117,23 +120,15 @@ fn main() {
             Objects::Images {
                 filter,
                 remote_tag,
+                remote_tag_filter,
                 ignore_unauthorized,
             } => {
-                let tag = filter.as_ref().map(|f| {
-                    if let Some(val) = f.strip_prefix("tag=") {
-                        val
-                    } else {
-                        eprintln!(
-                            "{}: only '{}' filter supported",
-                            "ERROR".red(),
-                            "tag=".yellow()
-                        );
-                        process::exit(2);
-                    }
-                });
+                let tag = unwrap_filter_tag(filter.as_deref());
+                let regex = unwrap_filter_regex(remote_tag_filter.as_deref());
                 let remote_tag = remote_tag.map(|tag| RemoteTag {
                     ignore_unauthorized,
                     remote_tag: tag,
+                    remote_tag_filter: regex,
                     verbosity: verbosity.clone(),
                 });
                 let op = compose.get_images(tag, remote_tag);
@@ -246,14 +241,25 @@ enum Objects {
     Services,
     /// List images
     Images {
-        /// filter by a property, currently only supported tag=TAG
+        /// filter by a property, if --remote-tag is used as well,
+        /// this filter is applied first, filtering out images that
+        /// don't match the filter. Currently only tag=TAG is supported
         #[arg(short, long)]
         filter: Option<String>,
-        /// use remote tag instead of the one set in the file if exists
-        #[arg(short, long)]
+        /// print with remote tag passed instead of the one set in the file
+        /// if exists in the docker registry
+        #[arg(short, long, value_name = "TAG")]
         remote_tag: Option<String>,
+        /// use with --remote-tag to filter which images should be checked
+        /// whether the remote tag exists or not, but images that don't match
+        /// the filter are not filtered out from the list printed, only
+        /// printed with the tag they have in the compose file.
+        /// Currently only regex=NAME is supported
+        // TODO implement
+        #[arg(long, value_name = "NAME", requires("remote_tag"))]
+        remote_tag_filter: Option<String>,
         /// ignore unauthorized errors from docker when fetching remote tags info
-        #[arg(long)]
+        #[arg(long, requires("remote_tag"))]
         ignore_unauthorized: bool,
     },
     /// List service's depends_on
