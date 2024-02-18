@@ -132,7 +132,7 @@ fn main() {
                     remote_tag_filter: regex,
                     verbosity: verbosity.clone(),
                 });
-                let op = compose.get_images(tag, remote_tag);
+                let op = compose.get_images(tag, remote_tag.as_ref());
                 match op {
                     None => {
                         eprintln!("{}: No services section found", "ERROR".red());

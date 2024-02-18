@@ -74,7 +74,7 @@ impl ComposeYaml {
     pub fn get_images(
         &self,
         filter_by_tag: Option<&str>,
-        remote_tag: Option<RemoteTag>,
+        remote_tag: Option<&RemoteTag>,
     ) -> Option<Vec<String>> {
         let services = self.get_services()?;
         let mut images = services

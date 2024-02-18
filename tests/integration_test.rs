@@ -21,15 +21,13 @@ services:
     image: rabbitmq:3
     ";
     let compose = ComposeYaml::new(&yaml)?;
-    let images = compose.get_images(
-        None,
-        Some(RemoteTag {
-            remote_tag: "16.2".to_string(),
-            remote_tag_filter: None,
-            ignore_unauthorized: true,
-            verbosity: Verbosity::default(),
-        }),
-    );
+    let remote_tag = RemoteTag {
+        remote_tag: "16.2".to_string(),
+        remote_tag_filter: None,
+        ignore_unauthorized: true,
+        verbosity: Verbosity::default(),
+    };
+    let images = compose.get_images(None, Some(&remote_tag));
     assert_eq!(
         images,
         Some(vec![
@@ -52,15 +50,13 @@ services:
     image: mysql:7
     ";
     let compose = ComposeYaml::new(&yaml)?;
-    let images = compose.get_images(
-        None,
-        Some(RemoteTag {
-            remote_tag: "8".to_string(),
-            remote_tag_filter: Some(Regex::new(r"mysql").unwrap()),
-            ignore_unauthorized: true,
-            verbosity: Verbosity::default(),
-        }),
-    );
+    let remote_tag = RemoteTag {
+        remote_tag: "8".to_string(),
+        remote_tag_filter: Some(Regex::new(r"mysql").unwrap()),
+        ignore_unauthorized: true,
+        verbosity: Verbosity::default(),
+    };
+    let images = compose.get_images(None, Some(&remote_tag));
     assert_eq!(
         images,
         Some(vec![
