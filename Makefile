@@ -1,4 +1,4 @@
-.PHONY : test test-integration test-cmd test-all-fast test-all fmt-check lint
+.PHONY : test test-integration test-cmd test-cmd-integration test-all-fast test-all fmt-check lint
 .DEFAULT_GOAL := release
 
 clean:
@@ -32,6 +32,9 @@ fmt-check:
 test-cmd: build
 	./tests/bats/bin/bats tests/run_test.bats
 
+test-cmd-integration: build
+	./tests/bats/bin/bats tests/run_integration_test.bats
+
 test-all-fast: lint fmt-check test test-cmd
 
-test-all: test-all-fast test-integration
+test-all: test-all-fast test-integration test-cmd-integration

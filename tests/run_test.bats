@@ -13,7 +13,7 @@ setup() {
     run target/debug/pose --help
     assert_success
     assert_output --partial 'Command line tool to play with 🐳 Docker Compose files.'
-    assert_output --partial 'list  List objects found in the compose file'
+    assert_output --partial 'list    List objects found in the compose file'
     # ...
     assert_output --partial '-f, --file <FILENAMES>'
 }
@@ -134,4 +134,39 @@ setup() {
     assert_failure 15
     refute_output --partial "ERROR: calling compose"
     assert_output --partial "could not find expected ':'"
+}
+
+@test "can output config using docker" {
+    run target/debug/pose -f tests/compose.yaml config
+    assert_success
+    assert_output --partial "app1"
+    assert_output --partial "app2"
+    assert_output --partial "postgres"
+    refute_output --partial "nginx"
+    # Secrets are filter out by docker compose config
+    # because are not used in the example
+    refute_output --partial "secrets"
+}
+
+@test "can output config without docker" {
+    run target/debug/pose --no-docker -f tests/compose.yaml config
+    assert_success
+    assert_output --partial "app1"
+    assert_output --partial "app2"
+    assert_output --partial "postgres"
+    refute_output --partial "nginx"
+    # Secrets are NOT filter out by config
+    # because are not used in the example
+    assert_output --partial "secrets"
+}
+
+@test "can output config managing interpolation" {
+    # With interpolation (default)
+    run target/debug/pose -f tests/with-interpolation.yml config
+    assert_success
+    assert_output --partial 'app:latest'
+    # Without interpolation
+    run target/debug/pose --no-interpolate -f tests/with-interpolation.yml config
+    assert_success
+    assert_output --partial 'app:${TAG:-latest}'
 }

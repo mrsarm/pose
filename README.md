@@ -140,6 +140,9 @@ even if you don't use `make` to see useful commands.
   the test framework [Bats](https://bats-core.readthedocs.io).
 - Rust integration tests: `make test-integration`. **Very slow**, they execute
   tests to check functionality that involves _pose → docker → docker registry_.
+- Shell integration tests: `make test-cmd-integration`, **Very slow**, they execute
+  tests to check functionality that involves _pose → docker → docker registry_ calling
+  the command line.
 - Run all the tests at once: `make test-all-fast`, including all the above,
   except integrations one.
 - Run **all the tests** at once: `make test-all`, include all tests, it's the

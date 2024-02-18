@@ -1,16 +1,14 @@
 //! `pose` is a command line tool to play with 🐳 Docker Compose files.
 
-use clap::{Parser, Subcommand, ValueEnum};
+use clap::Parser;
 use colored::Colorize;
-use serde_yaml::Mapping;
-use std::vec::IntoIter;
 use std::{fs, process};
 
 //mod lib;
-//use crate::lib::{ComposeYaml, get_compose_filename};
+//use crate::lib::ComposeYaml;
 use docker_pose::{
-    get_compose_filename, unwrap_filter_regex, unwrap_filter_tag, ComposeYaml, DockerCommand,
-    RemoteTag, Verbosity,
+    get_service, get_yml_content, print_names, unwrap_filter_regex, unwrap_filter_tag, Args,
+    Commands, ComposeYaml, DockerCommand, Objects, RemoteTag,
 };
 
 fn main() {
@@ -31,6 +29,9 @@ fn main() {
             let command = DockerCommand::new(verbosity.clone());
             let result_output = command.call_compose_config(
                 &args.filenames.iter().map(AsRef::as_ref).collect::<Vec<_>>(),
+                args.no_consistency,
+                args.no_interpolate,
+                args.no_normalize,
                 false,
                 false,
             );
@@ -153,133 +154,24 @@ fn main() {
                 print_names(el_iter, pretty);
             }
         },
-    }
-}
-
-fn print_names(iter: IntoIter<&str>, pretty: Formats) {
-    match pretty {
-        Formats::Full => iter.for_each(|service| println!("{}", service)),
-        Formats::Oneline => println!("{}", iter.collect::<Vec<&str>>().join(" ")),
-    }
-}
-
-fn get_service<'a>(compose: &'a ComposeYaml, service_name: &str) -> &'a Mapping {
-    let service = compose.get_service(service_name);
-    match service {
-        None => {
-            eprintln!("{}: No such service found: {}", "ERROR".red(), service_name);
-            process::exit(16);
-        }
-        Some(serv) => serv,
-    }
-}
-
-pub fn get_yml_content(filename: Option<&str>, verbosity: Verbosity) -> String {
-    let filename = get_compose_filename(filename, verbosity).unwrap_or_else(|err| {
-        eprintln!("{}: {}", "ERROR".red(), err);
-        if err.contains("no such file or directory") {
-            process::exit(14);
-        }
-        process::exit(10);
-    });
-    fs::read_to_string(filename).unwrap_or_else(|err| {
-        eprintln!("{}: reading compose file: {}", "ERROR".red(), err);
-        process::exit(11);
-    })
-}
-
-#[derive(Parser)]
-#[command(author, version, about, long_about = None)]
-struct Args {
-    #[command(subcommand)]
-    command: Commands,
-
-    #[arg(short, long = "file")]
-    filenames: Vec<String>,
-
-    /// Increase verbosity
-    #[arg(long, conflicts_with = "quiet")]
-    verbose: bool,
-
-    /// Only display relevant information or errors
-    #[arg(long, short, conflicts_with = "verbose")]
-    quiet: bool,
-
-    /// Don't call docker compose to parse compose model
-    #[arg(long)]
-    no_docker: bool,
-}
-
-impl Args {
-    pub fn get_verbosity(&self) -> Verbosity {
-        match self.verbose {
-            true => Verbosity::Verbose,
-            false => match self.quiet {
-                true => Verbosity::Quiet,
-                false => Verbosity::Info,
-            },
+        Commands::Config { output } => {
+            let result = compose.to_string().unwrap_or_else(|err| {
+                eprintln!("{}: {}", "ERROR".red(), err);
+                process::exit(20);
+            });
+            if let Some(file) = output {
+                fs::write(&file, result).unwrap_or_else(|e| {
+                    eprintln!(
+                        "{}: writing output to '{}' file: {}",
+                        "ERROR".red(),
+                        file.yellow(),
+                        e
+                    );
+                    process::exit(18);
+                });
+            } else {
+                println!("{}", result);
+            }
         }
     }
-}
-
-#[derive(Subcommand)]
-enum Commands {
-    /// List objects found in the compose file: services, volumes, ...
-    List {
-        #[command(subcommand)]
-        object: Objects,
-
-        #[arg(short, long, value_enum, default_value_t = Formats::Full, value_name = "FORMAT")]
-        pretty: Formats,
-    },
-    //TODO more coming soon...
-}
-
-#[derive(Subcommand, strum_macros::Display, PartialEq)]
-enum Objects {
-    /// List services
-    Services,
-    /// List images
-    Images {
-        /// filter by a property, if --remote-tag is used as well,
-        /// this filter is applied first, filtering out images that
-        /// don't match the filter. Currently only tag=TAG is supported
-        #[arg(short, long)]
-        filter: Option<String>,
-        /// print with remote tag passed instead of the one set in the file
-        /// if exists in the docker registry
-        #[arg(short, long, value_name = "TAG")]
-        remote_tag: Option<String>,
-        /// use with --remote-tag to filter which images should be checked
-        /// whether the remote tag exists or not, but images that don't match
-        /// the filter are not filtered out from the list printed, only
-        /// printed with the tag they have in the compose file.
-        /// Currently only regex=NAME is supported
-        // TODO implement
-        #[arg(long, value_name = "FILTER", requires("remote_tag"))]
-        remote_tag_filter: Option<String>,
-        /// ignore unauthorized errors from docker when fetching remote tags info
-        #[arg(long, requires("remote_tag"))]
-        ignore_unauthorized: bool,
-    },
-    /// List service's depends_on
-    Depends { service: String },
-    /// List volumes
-    Volumes,
-    /// List networks
-    Networks,
-    /// List configs
-    Configs,
-    /// List secrets
-    Secrets,
-    /// List profiles
-    Profiles,
-    /// List service's environment variables
-    Envs { service: String },
-}
-
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, strum_macros::Display)]
-enum Formats {
-    Full,
-    Oneline,
 }

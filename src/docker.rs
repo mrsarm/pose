@@ -63,31 +63,49 @@ impl DockerCommand {
         cmd: &str,
         filenames: &[&str],
         args: &[&str],
+        cmd_args: &[&str],
         output_stdout: bool,
         output_stderr: bool,
     ) -> io::Result<Output> {
-        let mut cmd_args = vec!["compose"];
+        let mut docker_args = vec!["compose"];
         for filename in filenames {
-            cmd_args.push("-f");
-            cmd_args.push(filename);
+            docker_args.push("-f");
+            docker_args.push(filename);
         }
         for arg in args {
-            cmd_args.push(arg);
+            docker_args.push(arg);
         }
-        cmd_args.push(cmd);
-        self.call_cmd(&cmd_args, output_stdout, output_stderr)
+        docker_args.push(cmd);
+        for arg in cmd_args {
+            docker_args.push(arg);
+        }
+        self.call_cmd(&docker_args, output_stdout, output_stderr)
     }
 
     pub fn call_compose_config(
         &self,
         filenames: &[&str],
+        no_consistency: bool,
+        no_interpolate: bool,
+        no_normalize: bool,
         output_stdout: bool,
         output_stderr: bool,
     ) -> io::Result<Output> {
+        let mut cmd_args = Vec::new();
+        if no_consistency {
+            cmd_args.push("--no-consistency");
+        }
+        if no_interpolate {
+            cmd_args.push("--no-interpolate");
+        }
+        if no_normalize {
+            cmd_args.push("--no-normalize");
+        }
         self.call_compose_cmd(
             "config",
             filenames,
             &Vec::default(),
+            &cmd_args,
             output_stdout,
             output_stderr,
         )
