@@ -79,7 +79,7 @@ fn main() {
             }
         }
     };
-    let compose = ComposeYaml::new(&yaml_content).unwrap_or_else(|err| {
+    let mut compose = ComposeYaml::new(&yaml_content).unwrap_or_else(|err| {
         if err.to_string().starts_with("invalid type") {
             eprintln!(
                 "{}: parsing compose YAML file: invalid content",
@@ -154,7 +154,22 @@ fn main() {
                 print_names(el_iter, pretty);
             }
         },
-        Commands::Config { output } => {
+        Commands::Config {
+            output,
+            remote_tag,
+            remote_tag_filter,
+            ignore_unauthorized,
+        } => {
+            let regex = unwrap_filter_regex(remote_tag_filter.as_deref());
+            let remote_tag = remote_tag.map(|tag| RemoteTag {
+                ignore_unauthorized,
+                remote_tag: tag,
+                remote_tag_filter: regex,
+                verbosity: verbosity.clone(),
+            });
+            if let Some(remote_t) = remote_tag {
+                compose.update_images_with_remote_tag(&remote_t);
+            }
             let result = compose.to_string().unwrap_or_else(|err| {
                 eprintln!("{}: {}", "ERROR".red(), err);
                 process::exit(20);

@@ -63,6 +63,18 @@ pub enum Commands {
         /// Save to file (default to stdout)
         #[arg(short, long, value_name = "FILE")]
         output: Option<String>,
+        /// output with remote tag passed instead of the one set in the file
+        /// if exists in the docker registry
+        #[arg(short, long, value_name = "TAG")]
+        remote_tag: Option<String>,
+        /// use with --remote-tag to filter which images should be checked
+        /// whether the remote tag exists or not.
+        /// Currently only regex=NAME is supported
+        #[arg(long, value_name = "FILTER", requires("remote_tag"))]
+        remote_tag_filter: Option<String>,
+        /// ignore unauthorized errors from docker when fetching remote tags info
+        #[arg(long, requires("remote_tag"))]
+        ignore_unauthorized: bool,
     },
 }
 

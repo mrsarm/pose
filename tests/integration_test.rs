@@ -67,3 +67,38 @@ services:
     );
     Ok(())
 }
+
+#[test]
+#[ignore]
+fn get_config_with_remote_tag_and_filter() -> Result<(), Error> {
+    let yaml = r#"
+services:
+  postgres:
+    image: postgres:7
+  mysql:
+    image: mysql:7
+  rabbitmq:
+    image: rabbitmq
+    "#;
+    let expected_yaml = r#"
+services:
+  postgres:
+    image: postgres:7
+  mysql:
+    image: mysql:8
+  rabbitmq:
+    image: rabbitmq
+    "#;
+    let remote_tag = RemoteTag {
+        remote_tag: "8".to_string(),
+        remote_tag_filter: Some(Regex::new(r"mysql").unwrap()),
+        ignore_unauthorized: true,
+        verbosity: Verbosity::default(),
+    };
+    let mut compose = ComposeYaml::new(&yaml)?;
+    compose.update_images_with_remote_tag(&remote_tag);
+    let new_yaml = compose.to_string();
+    assert!(new_yaml.is_ok());
+    assert_eq!(expected_yaml.to_string().trim(), new_yaml.unwrap().trim());
+    Ok(())
+}

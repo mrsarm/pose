@@ -156,6 +156,46 @@ impl ComposeYaml {
         Some(images.iter().map(|i| i.to_string()).collect::<Vec<_>>())
     }
 
+    pub fn update_images_with_remote_tag(&mut self, remote_tag: &RemoteTag) {
+        if let Some(images_with_remote) = self.get_images(None, Some(remote_tag)) {
+            let services_names = self
+                .get_root_element_names("services")
+                .iter()
+                .map(|s| s.to_string())
+                .collect::<Vec<_>>();
+            let services_op = self
+                .map
+                .get_mut("services")
+                .and_then(|v| v.as_mapping_mut());
+            if let Some(services) = services_op {
+                for service_name in services_names {
+                    // let service = services.get_mut(service_name).map(|s| s.as_mapping_mut()).flatten().unwrap();
+                    let service = services.entry(Value::String(service_name.to_string()));
+                    service.and_modify(|serv| {
+                        if let Some(image_value) = serv.get_mut("image") {
+                            let image = image_value
+                                .as_str()
+                                .map(|i| i.to_string())
+                                .unwrap_or_default();
+                            let image_name = image.split(':').next().unwrap_or_default();
+                            let remote_image_op = images_with_remote.iter().find(|i| {
+                                let remote_image_name = i.split(':').next().unwrap_or_default();
+                                image_name == remote_image_name
+                            });
+                            if let Some(remote_image) = remote_image_op {
+                                if remote_image != &image {
+                                    if let Value::String(string) = image_value {
+                                        string.replace_range(.., remote_image);
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+        }
+    }
+
     pub fn get_service(&self, service_name: &str) -> Option<&Mapping> {
         let services = self.get_services()?;
         let service = services.get(service_name);
