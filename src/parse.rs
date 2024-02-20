@@ -21,7 +21,7 @@ pub struct RemoteTag {
     /// replace tag with remote tag if exists
     pub remote_tag: String,
     /// don't replace with remote tag unless this regex match the image name / tag
-    pub remote_tag_filter: Option<Regex>,
+    pub remote_tag_filter: Option<(Regex, bool)>,
     /// docker may require to be logged-in to fetch some images info
     pub ignore_unauthorized: bool,
     /// verbosity used when fetching remote images info
@@ -71,6 +71,7 @@ impl ComposeYaml {
         Some(profiles)
     }
 
+    #[allow(clippy::blocks_in_conditions)]
     pub fn get_images(
         &self,
         filter_by_tag: Option<&str>,
@@ -104,7 +105,10 @@ impl ComposeYaml {
                 if remote
                     .remote_tag_filter
                     .as_ref()
-                    .map(|r| r.is_match(image))
+                    .map(|r| {
+                        let is_match = r.0.is_match(image);
+                        (r.1 && is_match) || (!r.1 && !is_match)
+                    })
                     .unwrap_or(true)
                 {
                     let image_parts = image.split(':').collect::<Vec<_>>();
@@ -169,7 +173,6 @@ impl ComposeYaml {
                 .and_then(|v| v.as_mapping_mut());
             if let Some(services) = services_op {
                 for service_name in services_names {
-                    // let service = services.get_mut(service_name).map(|s| s.as_mapping_mut()).flatten().unwrap();
                     let service = services.entry(Value::String(service_name.to_string()));
                     service.and_modify(|serv| {
                         if let Some(image_value) = serv.get_mut("image") {

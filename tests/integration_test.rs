@@ -52,7 +52,7 @@ services:
     let compose = ComposeYaml::new(&yaml)?;
     let remote_tag = RemoteTag {
         remote_tag: "8".to_string(),
-        remote_tag_filter: Some(Regex::new(r"mysql").unwrap()),
+        remote_tag_filter: Some((Regex::new(r"mysql").unwrap(), true)),
         ignore_unauthorized: true,
         verbosity: Verbosity::default(),
     };
@@ -91,7 +91,8 @@ services:
     "#;
     let remote_tag = RemoteTag {
         remote_tag: "8".to_string(),
-        remote_tag_filter: Some(Regex::new(r"mysql").unwrap()),
+        // Exclude postgres
+        remote_tag_filter: Some((Regex::new(r"postgres").unwrap(), false)),
         ignore_unauthorized: true,
         verbosity: Verbosity::default(),
     };

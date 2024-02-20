@@ -25,28 +25,39 @@ pub fn unwrap_filter_tag(filter: Option<&str>) -> Option<&str> {
 
 /// Get the regex value (or None), or exit if the filter
 /// passed doesn't star with "regex=" prefix.
-pub fn unwrap_filter_regex(filter: Option<&str>) -> Option<Regex> {
+pub fn unwrap_filter_regex(filter: Option<&str>) -> Option<(Regex, bool)> {
     filter.as_ref().map(|f| {
         if let Some(val) = f.strip_prefix("regex=") {
-            Regex::new(val).unwrap_or_else(|e| {
-                eprintln!(
-                    "{}: invalid regex expression '{}' in filter - {}",
-                    "ERROR".red(),
-                    val.yellow(),
-                    e
-                );
-                process::exit(2);
-            })
-        } else {
-            eprintln!(
-                "{}: wrong filter '{}', only '{}' filter supported",
-                "ERROR".red(),
-                f.yellow(),
-                "regex=".yellow()
-            );
-            process::exit(2);
+            let regex = Regex::new(val).unwrap_or_else(|e| {
+                invalid_regex_exit(e, val);
+            });
+            return (regex, true);
         }
+        if let Some(val) = f.strip_prefix("regex!=") {
+            let regex = Regex::new(val).unwrap_or_else(|e| {
+                invalid_regex_exit(e, val);
+            });
+            return (regex, false);
+        }
+        eprintln!(
+            "{}: wrong filter '{}', only '{}' or '{}' filters are supported",
+            "ERROR".red(),
+            f.yellow(),
+            "regex=".yellow(),
+            "regex!=".yellow()
+        );
+        process::exit(2);
     })
+}
+
+fn invalid_regex_exit(e: regex::Error, val: &str) -> ! {
+    eprintln!(
+        "{}: invalid regex expression '{}' in filter - {}",
+        "ERROR".red(),
+        val.yellow(),
+        e
+    );
+    process::exit(2);
 }
 
 pub fn print_names(iter: IntoIter<&str>, pretty: Formats) {

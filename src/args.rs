@@ -69,7 +69,7 @@ pub enum Commands {
         remote_tag: Option<String>,
         /// use with --remote-tag to filter which images should be checked
         /// whether the remote tag exists or not.
-        /// Currently only regex=NAME is supported
+        /// Currently only regex=NAME or regex!=NAME are supported
         #[arg(long, value_name = "FILTER", requires("remote_tag"))]
         remote_tag_filter: Option<String>,
         /// ignore unauthorized errors from docker when fetching remote tags info
@@ -97,7 +97,7 @@ pub enum Objects {
         /// whether the remote tag exists or not, but images that don't match
         /// the filter are not filtered out from the list printed, only
         /// printed with the tag they have in the compose file.
-        /// Currently only regex=NAME is supported
+        /// Currently only regex=NAME or regex!=NAME are supported
         #[arg(long, value_name = "FILTER", requires("remote_tag"))]
         remote_tag_filter: Option<String>,
         /// ignore unauthorized errors from docker when fetching remote tags info
