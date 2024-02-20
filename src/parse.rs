@@ -26,6 +26,8 @@ pub struct RemoteTag {
     pub ignore_unauthorized: bool,
     /// verbosity used when fetching remote images info
     pub verbosity: Verbosity,
+    /// show remote tags found while they are fetched
+    pub remote_progress_verbosity: Verbosity,
 }
 
 impl ComposeYaml {
@@ -101,7 +103,12 @@ impl ComposeYaml {
         if let Some(remote) = remote_tag {
             let mut updated_images: Vec<String> = Vec::new();
             let command = DockerCommand::new(remote.verbosity.clone());
+            let show_remote_progress = matches!(remote.verbosity, Verbosity::Verbose)
+                || matches!(remote.remote_progress_verbosity, Verbosity::Verbose);
             for image in &images {
+                let image_parts = image.split(':').collect::<Vec<_>>();
+                let image_name = *image_parts.first().unwrap();
+                let remote_image = format!("{}:{}", image_name, remote.remote_tag);
                 if remote
                     .remote_tag_filter
                     .as_ref()
@@ -111,9 +118,6 @@ impl ComposeYaml {
                     })
                     .unwrap_or(true)
                 {
-                    let image_parts = image.split(':').collect::<Vec<_>>();
-                    let image_name = *image_parts.first().unwrap();
-                    let remote_image = format!("{}:{}", image_name, remote.remote_tag);
                     let inspect_output = command
                         .get_manifest_inspect(&remote_image)
                         .unwrap_or_else(|e| {
@@ -126,11 +130,12 @@ impl ComposeYaml {
                             process::exit(151);
                         });
                     if inspect_output.status.success() {
-                        if matches!(remote.verbosity, Verbosity::Verbose) {
+                        if show_remote_progress {
                             eprintln!(
-                                "{}: remote image {} found",
+                                "{}: remote manifest for image {} ... {} ",
                                 "DEBUG".green(),
-                                remote_image.yellow()
+                                remote_image.yellow(),
+                                "found".green()
                             );
                         }
                         updated_images.push(remote_image);
@@ -140,6 +145,14 @@ impl ComposeYaml {
                         if stderr.contains("no such manifest")
                             || (remote.ignore_unauthorized && stderr.contains("unauthorized:"))
                         {
+                            if show_remote_progress {
+                                eprintln!(
+                                    "{}: remote manifest for image {} ... {} ",
+                                    "DEBUG".green(),
+                                    remote_image.yellow(),
+                                    "not found".purple()
+                                );
+                            }
                             updated_images.push(image.to_string());
                         } else {
                             eprintln!(
@@ -152,6 +165,14 @@ impl ComposeYaml {
                         }
                     }
                 } else {
+                    if show_remote_progress {
+                        eprintln!(
+                            "{}: remote manifest for image {} ... {} ",
+                            "DEBUG".green(),
+                            image_name.yellow(),
+                            "skipped".bright_black()
+                        );
+                    }
                     updated_images.push(image.to_string());
                 }
             }

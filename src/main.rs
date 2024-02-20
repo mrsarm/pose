@@ -8,7 +8,7 @@ use std::{fs, process};
 //use crate::lib::ComposeYaml;
 use docker_pose::{
     get_service, get_yml_content, print_names, unwrap_filter_regex, unwrap_filter_tag, Args,
-    Commands, ComposeYaml, DockerCommand, Objects, RemoteTag,
+    Commands, ComposeYaml, DockerCommand, Objects, RemoteTag, Verbosity,
 };
 
 fn main() {
@@ -123,6 +123,7 @@ fn main() {
                 remote_tag,
                 remote_tag_filter,
                 ignore_unauthorized,
+                remote_progress,
             } => {
                 let tag = unwrap_filter_tag(filter.as_deref());
                 let regex = unwrap_filter_regex(remote_tag_filter.as_deref());
@@ -131,6 +132,10 @@ fn main() {
                     remote_tag: tag,
                     remote_tag_filter: regex,
                     verbosity: verbosity.clone(),
+                    remote_progress_verbosity: match remote_progress {
+                        true => Verbosity::Verbose,
+                        false => Verbosity::Quiet,
+                    },
                 });
                 let op = compose.get_images(tag, remote_tag.as_ref());
                 match op {
@@ -159,6 +164,7 @@ fn main() {
             remote_tag,
             remote_tag_filter,
             ignore_unauthorized,
+            remote_progress,
         } => {
             let regex = unwrap_filter_regex(remote_tag_filter.as_deref());
             let remote_tag = remote_tag.map(|tag| RemoteTag {
@@ -166,6 +172,10 @@ fn main() {
                 remote_tag: tag,
                 remote_tag_filter: regex,
                 verbosity: verbosity.clone(),
+                remote_progress_verbosity: match remote_progress {
+                    true => Verbosity::Verbose,
+                    false => Verbosity::Quiet,
+                },
             });
             if let Some(remote_t) = remote_tag {
                 compose.update_images_with_remote_tag(&remote_t);

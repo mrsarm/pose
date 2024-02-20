@@ -75,6 +75,11 @@ pub enum Commands {
         /// ignore unauthorized errors from docker when fetching remote tags info
         #[arg(long, requires("remote_tag"))]
         ignore_unauthorized: bool,
+
+        /// Outputs in stderr the progress of fetching remote tags, similar to the --verbose argument,
+        /// but without all the other details --verbose adds
+        #[arg(long, requires("remote_tag"))]
+        remote_progress: bool,
     },
 }
 
@@ -103,6 +108,10 @@ pub enum Objects {
         /// ignore unauthorized errors from docker when fetching remote tags info
         #[arg(long, requires("remote_tag"))]
         ignore_unauthorized: bool,
+        /// Outputs in stderr the progress of fetching remote tags, similar to the --verbose argument,
+        /// but without all the other details --verbose adds
+        #[arg(long, requires("remote_tag"))]
+        remote_progress: bool,
     },
     /// List service's depends_on
     Depends { service: String },

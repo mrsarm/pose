@@ -26,6 +26,7 @@ services:
         remote_tag_filter: None,
         ignore_unauthorized: true,
         verbosity: Verbosity::default(),
+        remote_progress_verbosity: Verbosity::Quiet,
     };
     let images = compose.get_images(None, Some(&remote_tag));
     assert_eq!(
@@ -55,6 +56,7 @@ services:
         remote_tag_filter: Some((Regex::new(r"mysql").unwrap(), true)),
         ignore_unauthorized: true,
         verbosity: Verbosity::default(),
+        remote_progress_verbosity: Verbosity::Quiet,
     };
     let images = compose.get_images(None, Some(&remote_tag));
     assert_eq!(
@@ -95,6 +97,7 @@ services:
         remote_tag_filter: Some((Regex::new(r"postgres").unwrap(), false)),
         ignore_unauthorized: true,
         verbosity: Verbosity::default(),
+        remote_progress_verbosity: Verbosity::Quiet,
     };
     let mut compose = ComposeYaml::new(&yaml)?;
     compose.update_images_with_remote_tag(&remote_tag);
