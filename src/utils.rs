@@ -23,8 +23,11 @@ pub fn unwrap_filter_tag(filter: Option<&str>) -> Option<&str> {
     })
 }
 
-/// Get the regex value (or None), or exit if the filter
-/// passed doesn't star with "regex=" prefix.
+/// Get the regex value expressed in &str, or exit if the filter
+/// passed doesn't star with "regex=" or "regex!=" prefixes.
+/// When expression has "=" the bool is true, when is "!="
+/// the bool is false.
+/// If the option passed is None, this method returns None as well.
 pub fn unwrap_filter_regex(filter: Option<&str>) -> Option<(Regex, bool)> {
     filter.as_ref().map(|f| {
         if let Some(val) = f.strip_prefix("regex=") {

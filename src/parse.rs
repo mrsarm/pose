@@ -20,7 +20,8 @@ pub struct ComposeYaml {
 pub struct RemoteTag {
     /// replace tag with remote tag if exists
     pub remote_tag: String,
-    /// don't replace with remote tag unless this regex match the image name / tag
+    /// don't replace with remote tag unless this regex match the image name / tag,
+    /// in case the bool is false, the replacing is done if the regex doesn't match
     pub remote_tag_filter: Option<(Regex, bool)>,
     /// docker may require to be logged-in to fetch some images info
     pub ignore_unauthorized: bool,
@@ -73,7 +74,6 @@ impl ComposeYaml {
         Some(profiles)
     }
 
-    #[allow(clippy::blocks_in_conditions)]
     pub fn get_images(
         &self,
         filter_by_tag: Option<&str>,
@@ -112,9 +112,9 @@ impl ComposeYaml {
                 if remote
                     .remote_tag_filter
                     .as_ref()
-                    .map(|r| {
-                        let is_match = r.0.is_match(image);
-                        (r.1 && is_match) || (!r.1 && !is_match)
+                    .map(|r| (r.1, r.0.is_match(image)))
+                    .map(|(affirmative_expr, is_match)| {
+                        (affirmative_expr && is_match) || (!affirmative_expr && !is_match)
                     })
                     .unwrap_or(true)
                 {
