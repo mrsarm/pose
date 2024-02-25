@@ -102,7 +102,6 @@ impl ComposeYaml {
         images.dedup();
         if let Some(remote) = remote_tag {
             let mut updated_images: Vec<String> = Vec::new();
-            let command = DockerCommand::new(remote.verbosity.clone());
             let show_remote_progress = matches!(remote.verbosity, Verbosity::Verbose)
                 || matches!(remote.remote_progress_verbosity, Verbosity::Verbose);
             for image in &images {
@@ -118,51 +117,9 @@ impl ComposeYaml {
                     })
                     .unwrap_or(true)
                 {
-                    let inspect_output = command
-                        .get_manifest_inspect(&remote_image)
-                        .unwrap_or_else(|e| {
-                            eprintln!(
-                                "{}: fetching image manifest for {}: {}",
-                                "ERROR".red(),
-                                remote_image,
-                                e
-                            );
-                            process::exit(151);
-                        });
-                    if inspect_output.status.success() {
-                        if show_remote_progress {
-                            eprintln!(
-                                "{}: remote manifest for image {} ... {} ",
-                                "DEBUG".green(),
-                                remote_image.yellow(),
-                                "found".green()
-                            );
-                        }
-                        updated_images.push(remote_image);
-                    } else {
-                        let exit_code = command.exit_code(&inspect_output);
-                        let stderr = String::from_utf8(inspect_output.stderr).unwrap();
-                        if stderr.contains("no such manifest")
-                            || (remote.ignore_unauthorized && stderr.contains("unauthorized:"))
-                        {
-                            if show_remote_progress {
-                                eprintln!(
-                                    "{}: remote manifest for image {} ... {} ",
-                                    "DEBUG".green(),
-                                    remote_image.yellow(),
-                                    "not found".purple()
-                                );
-                            }
-                            updated_images.push(image.to_string());
-                        } else {
-                            eprintln!(
-                                "{}: fetching image manifest for {}: {}",
-                                "ERROR".red(),
-                                remote_image,
-                                stderr
-                            );
-                            process::exit(exit_code);
-                        }
+                    match Self::has_manifest(remote, &remote_image, show_remote_progress) {
+                        true => updated_images.push(remote_image),
+                        false => updated_images.push(image.to_string()),
                     }
                 } else {
                     if show_remote_progress {
@@ -181,6 +138,62 @@ impl ComposeYaml {
         Some(images.iter().map(|i| i.to_string()).collect::<Vec<_>>())
     }
 
+    /// Returns whether the manifest, handling possible errors.
+    /// When the manifest exists, means the image exists for the
+    /// particular tag passed in the remote registry.
+    fn has_manifest(remote: &RemoteTag, remote_image: &str, show_remote_progress: bool) -> bool {
+        let command = DockerCommand::new(remote.verbosity.clone());
+        let inspect_output = command
+            .get_manifest_inspect(remote_image)
+            .unwrap_or_else(|e| {
+                eprintln!(
+                    "{}: fetching image manifest for {}: {}",
+                    "ERROR".red(),
+                    remote_image,
+                    e
+                );
+                process::exit(151);
+            });
+        if inspect_output.status.success() {
+            if show_remote_progress {
+                eprintln!(
+                    "{}: remote manifest for image {} ... {} ",
+                    "DEBUG".green(),
+                    remote_image.yellow(),
+                    "found".green()
+                );
+            }
+            true
+        } else {
+            let exit_code = command.exit_code(&inspect_output);
+            let stderr = String::from_utf8(inspect_output.stderr).unwrap();
+            if stderr.contains("no such manifest")
+                || (remote.ignore_unauthorized && stderr.contains("unauthorized:"))
+            {
+                if show_remote_progress {
+                    eprintln!(
+                        "{}: remote manifest for image {} ... {} ",
+                        "DEBUG".green(),
+                        remote_image.yellow(),
+                        "not found".purple()
+                    );
+                }
+                false
+            } else {
+                eprintln!(
+                    "{}: fetching image manifest for {}: {}",
+                    "ERROR".red(),
+                    remote_image,
+                    stderr
+                );
+                process::exit(exit_code);
+            }
+        }
+    }
+
+    /// Update all services' image attributes with the remote
+    /// tag passed if the tag exists in the remote registry, otherwise
+    /// the image value is untouched.
     pub fn update_images_with_remote_tag(&mut self, remote_tag: &RemoteTag) {
         if let Some(images_with_remote) = self.get_images(None, Some(remote_tag)) {
             let services_names = self
