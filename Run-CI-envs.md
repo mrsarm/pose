@@ -5,7 +5,7 @@ a VCS repository (git), with big SHA numbers pointing to different version of th
 app (commit revision in git, digest in docker), and branches and tags pointing to a
 specific commit in git, the same with tags in docker pointing to SHA digests.
 
-So having these rules that are pretty normal among tech organizations:
+So here are some rules that are pretty normal among tech organizations:
 
 - **Git repositories**:
     - `main` branch is the development branch in git, and contains what normally is
