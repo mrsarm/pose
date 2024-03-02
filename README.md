@@ -6,15 +6,13 @@ Pose: a Docker Com-"pose" CLI
 `pose` is a command line tool to play with :whale: Docker Compose files.
 
 It allows to list some properties from your `compose.yaml` file, but more
-importantly, it does allow in CI environments to build on the fly a new
-compose file from another, replacing tag versions from the images with a new remote
+importantly, it does allow in **CI environments to tests distributed apps**
+with docker compose, building on the fly a new compose file from another,
+replacing tag versions from the images with a new remote
 version (if exists), making it possible to develop a feature across
 dockerized apps, tagged with a common name, e.g. `new-tracking-field`,
-then test them all together in a CI environment with docker compose,
-to finally merge them all or keep making changes without affect the `latest`
-version (or whatever you call it) until all `new-tracking-field` images from the
-different affected apps are ready to move into stage / prod (see
-[Run feature branches in a CI environment](#run-feature-branches-in-a-ci-environment)).
+to then test them all together in a CI environment with docker compose
+(see [Run feature branches in a CI environment](#run-feature-branches-in-a-ci-environment)).
 
 ## Use Cases
 
