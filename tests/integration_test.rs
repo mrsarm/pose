@@ -27,6 +27,7 @@ services:
         ignore_unauthorized: true,
         verbosity: Verbosity::default(),
         remote_progress_verbosity: Verbosity::Quiet,
+        threads: 4,
     };
     let images = compose.get_images(None, Some(&remote_tag));
     assert_eq!(
@@ -57,6 +58,7 @@ services:
         ignore_unauthorized: true,
         verbosity: Verbosity::default(),
         remote_progress_verbosity: Verbosity::Quiet,
+        threads: 2,
     };
     let images = compose.get_images(None, Some(&remote_tag));
     assert_eq!(
@@ -98,6 +100,7 @@ services:
         ignore_unauthorized: true,
         verbosity: Verbosity::default(),
         remote_progress_verbosity: Verbosity::Quiet,
+        threads: 2,
     };
     let mut compose = ComposeYaml::new(&yaml)?;
     compose.update_images_with_remote_tag(&remote_tag);

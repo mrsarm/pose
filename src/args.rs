@@ -1,6 +1,8 @@
 /// Types to parse the command line arguments with the clap crate.
 use crate::Verbosity;
 use clap::{Parser, Subcommand, ValueEnum};
+use clap_num::number_range;
+use std::cmp::Ord;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -48,6 +50,10 @@ impl Args {
     }
 }
 
+fn positive_less_than_32(s: &str) -> Result<u8, String> {
+    number_range(s, 1, 32)
+}
+
 #[derive(Subcommand)]
 pub enum Commands {
     /// List objects found in the compose file: services, volumes, ...
@@ -75,11 +81,13 @@ pub enum Commands {
         /// ignore unauthorized errors from docker when fetching remote tags info
         #[arg(long, requires("remote_tag"))]
         ignore_unauthorized: bool,
-
         /// Outputs in stderr the progress of fetching remote tags, similar to the --verbose argument,
         /// but without all the other details --verbose adds
         #[arg(long, requires("remote_tag"))]
         remote_progress: bool,
+        /// max number of threads used to fetch remote images info
+        #[arg(long, value_name = "NUM", default_value_t = 4, value_parser = positive_less_than_32, requires("remote_tag"))]
+        threads: u8,
     },
 }
 
@@ -112,6 +120,9 @@ pub enum Objects {
         /// but without all the other details --verbose adds
         #[arg(long, requires("remote_tag"))]
         remote_progress: bool,
+        /// max number of threads used to fetch remote images info
+        #[arg(long, value_name = "NUM", default_value_t = 4, value_parser = positive_less_than_32, requires("remote_tag"))]
+        threads: u8,
     },
     /// List service's depends_on
     Depends { service: String },

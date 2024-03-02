@@ -124,11 +124,13 @@ fn main() {
                 remote_tag_filter,
                 ignore_unauthorized,
                 remote_progress,
+                threads,
             } => {
                 let tag = unwrap_filter_tag(filter.as_deref());
                 let regex = unwrap_filter_regex(remote_tag_filter.as_deref());
                 let remote_tag = remote_tag.map(|tag| RemoteTag {
                     ignore_unauthorized,
+                    threads,
                     remote_tag: tag,
                     remote_tag_filter: regex,
                     verbosity: verbosity.clone(),
@@ -165,10 +167,12 @@ fn main() {
             remote_tag_filter,
             ignore_unauthorized,
             remote_progress,
+            threads,
         } => {
             let regex = unwrap_filter_regex(remote_tag_filter.as_deref());
             let remote_tag = remote_tag.map(|tag| RemoteTag {
                 ignore_unauthorized,
+                threads,
                 remote_tag: tag,
                 remote_tag_filter: regex,
                 verbosity: verbosity.clone(),

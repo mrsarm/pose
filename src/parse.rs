@@ -3,9 +3,12 @@ use crate::DockerCommand;
 use colored::*;
 use regex::Regex;
 use serde_yaml::{to_string, Error, Mapping, Value};
+use std::cmp::{max, min};
 use std::collections::BTreeMap;
 use std::path::Path;
-use std::process;
+use std::sync::mpsc::{Receiver, Sender};
+use std::sync::{mpsc, Arc, Mutex};
+use std::{process, thread};
 
 lazy_static! {
     static ref EMPTY_MAP: Mapping = Mapping::default();
@@ -17,6 +20,7 @@ pub struct ComposeYaml {
     map: BTreeMap<String, Value>,
 }
 
+#[derive(Clone)]
 pub struct RemoteTag {
     /// replace tag with remote tag if exists
     pub remote_tag: String,
@@ -29,6 +33,8 @@ pub struct RemoteTag {
     pub verbosity: Verbosity,
     /// show remote tags found while they are fetched
     pub remote_progress_verbosity: Verbosity,
+    /// max number of threads used to fetch remote images info
+    pub threads: u8,
 }
 
 impl ComposeYaml {
@@ -101,38 +107,93 @@ impl ComposeYaml {
         images.sort();
         images.dedup();
         if let Some(remote) = remote_tag {
-            let mut updated_images: Vec<String> = Vec::new();
             let show_remote_progress = matches!(remote.verbosity, Verbosity::Verbose)
                 || matches!(remote.remote_progress_verbosity, Verbosity::Verbose);
-            for image in &images {
-                let image_parts = image.split(':').collect::<Vec<_>>();
-                let image_name = *image_parts.first().unwrap();
-                let remote_image = format!("{}:{}", image_name, remote.remote_tag);
-                if remote
-                    .remote_tag_filter
-                    .as_ref()
-                    .map(|r| (r.1, r.0.is_match(image)))
-                    .map(|(affirmative_expr, is_match)| {
-                        (affirmative_expr && is_match) || (!affirmative_expr && !is_match)
-                    })
-                    .unwrap_or(true)
-                {
-                    match Self::has_manifest(remote, &remote_image, show_remote_progress) {
-                        true => updated_images.push(remote_image),
-                        false => updated_images.push(image.to_string()),
-                    }
-                } else {
-                    if show_remote_progress {
-                        eprintln!(
-                            "{}: remote manifest for image {} ... {} ",
-                            "DEBUG".green(),
-                            image_name.yellow(),
-                            "skipped".bright_black()
-                        );
-                    }
-                    updated_images.push(image.to_string());
-                }
+            let input = Arc::new(Mutex::new(
+                images
+                    .iter()
+                    .rev()
+                    .map(|e| e.to_string())
+                    .collect::<Vec<String>>(),
+            ));
+            let remote_arc = Arc::new(remote.clone());
+            let mut updated_images: Vec<String> = Vec::with_capacity(images.len());
+            let (tx, rx): (Sender<String>, Receiver<String>) = mpsc::channel();
+            let mut thread_children = Vec::new();
+            let nthreads = max(1, min(images.len(), remote.threads as usize));
+            if matches!(remote.verbosity, Verbosity::Verbose) {
+                eprintln!(
+                    "{}: spawning {} threads to fetch remote info from {} images",
+                    "DEBUG".green(),
+                    nthreads,
+                    images.len()
+                )
             }
+            for _ in 0..nthreads {
+                let input = Arc::clone(&input);
+                let remote = Arc::clone(&remote_arc);
+                let thread_tx = tx.clone();
+                let child = thread::spawn(move || {
+                    loop {
+                        let mut v = input.lock().unwrap();
+                        let last = v.pop(); // take one element out from the vec and free
+                        drop(v); // the vector lock so other threads can get it
+                        if let Some(image) = last {
+                            let image_parts = image.split(':').collect::<Vec<_>>();
+                            let image_name = *image_parts.first().unwrap();
+                            let remote_image = format!("{}:{}", image_name, remote.remote_tag);
+                            if remote
+                                .remote_tag_filter
+                                .as_ref()
+                                .map(|r| (r.1, r.0.is_match(&image)))
+                                .map(|(affirmative_expr, is_match)| {
+                                    (affirmative_expr && is_match)
+                                        || (!affirmative_expr && !is_match)
+                                })
+                                .unwrap_or(true)
+                            {
+                                // check whether the image:<remote_tag> exists or not
+                                match Self::has_manifest(
+                                    &remote,
+                                    &remote_image,
+                                    show_remote_progress,
+                                ) {
+                                    true => thread_tx.send(remote_image).unwrap(),
+                                    false => thread_tx.send(image).unwrap(),
+                                }
+                            } else {
+                                // skip the remote check and add it as it is into the list
+                                if show_remote_progress {
+                                    eprintln!(
+                                        "{}: remote manifest for image {} ... {} ",
+                                        "DEBUG".green(),
+                                        image_name.yellow(),
+                                        "skipped".bright_black()
+                                    );
+                                }
+                                thread_tx.send(image.to_string()).unwrap();
+                            }
+                        } else {
+                            break; // The vector got empty, all elements were processed
+                        }
+                    }
+                });
+                thread_children.push(child);
+            }
+            for _ in 0..images.len() {
+                let out = rx.recv().unwrap();
+                updated_images.push(out);
+            }
+            for child in thread_children {
+                child.join().unwrap_or_else(|e| {
+                    eprintln!(
+                        "{}: child thread panicked while fetching remote images info: {:?}",
+                        "ERROR".red(),
+                        e
+                    );
+                });
+            }
+            updated_images.sort();
             return Some(updated_images);
         }
         Some(images.iter().map(|i| i.to_string()).collect::<Vec<_>>())
