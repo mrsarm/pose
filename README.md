@@ -1,7 +1,7 @@
 Pose: a Docker Com-"pose" CLI
 =============================
 
-> _Docker compose helper to release apps in a transactional manner!_ 
+> **Docker compose "helper" to release apps in a transactional manner !** 
 
 `pose` is a command line tool to play with :whale: Docker Compose files.
 
