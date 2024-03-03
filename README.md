@@ -1,9 +1,20 @@
 Pose: a Docker Com-"pose" CLI
 =============================
 
+> **Docker compose "helper" to release apps in a transactional manner !** 
+
 `pose` is a command line tool to play with :whale: Docker Compose files.
 
-For now only supports listing some elements from a compose file:
+It allows to list some properties from your `compose.yaml` file, but more
+importantly, it does allow in **CI environments to tests distributed apps**
+with docker compose, building on the fly a new compose file from another,
+replacing tag versions from the images with a new remote
+version (if exists), making it possible to develop a feature across
+dockerized apps, tagged with a common name, e.g. `new-tracking-field`,
+to then test them all together in a CI environment with docker compose
+(see [Run feature branches in a CI environment](#run-feature-branches-in-a-ci-environment)).
+
+## Use Cases
 
 ```bash
 $ pose list services
@@ -17,16 +28,18 @@ PORT=5432
 POSTGRES_PASSWORD=password
 ```
 
-It looks for the compose file following the [spec](https://github.com/compose-spec/compose-spec/blob/master/spec.md#compose-file)
-as `docker compose` does, or you can specify the filename as following: `pose list -f another.yaml services`.
+Pose looks for the compose file following the [spec](https://github.com/compose-spec/compose-spec/blob/master/spec.md#compose-file)
+as `docker compose` does, or you can specify the filename/s
+as following: `pose -f compose.yaml -f another.yaml list services`.
 
-Execute `pose --help` for more options, but don't expect too much, it's just a
-project I made to have fun with Rust.
-
-## Use Cases
+Execute `pose --help` for more options.
 
 Pose can be helpful when working with large compose files, with dozens of definitions,
 where looking for something or summarize it can involve more work than without using pose.
+
+#### Run feature branches in a CI environment
+
+Read this [doc](Run-CI-envs.md) to learn how to use it for CI environments to run integration tests.
 
 #### Find that service you don't remember exactly the name
 
@@ -94,11 +107,12 @@ $ cargo install docker-pose
 (Yes, the package name in Crates.io is `docker-pose`, not `pose`).
 
 Or from the source, after cloning the source code, go to the folder and
-execute ` cargo install --path .`.
+execute ` cargo install --path .` or `make install` (normally it will
+install the binary in the `~/.cargo/bin` folder).
 
 ### Binary Download
 
-Binaries are made available each release.
+Binaries are made available each release for Linux, Mac and Windows.
 
 Download the binary on the [release](https://github.com/mrsarm/pose/releases) page.
 
@@ -123,6 +137,35 @@ $ ./pose
 Include the directory Pose is in, in your [PATH Variable](https://www.baeldung.com/linux/path-variable)
 if you wish to be able to execute it anywhere, or move Pose to a directory already
 included in your `$PATH` variable, like `$HOME/.local/bin`.
+
+### Build and run tests
+
+There is a `Makefile` that can be used to execute most of the development tasks,
+like `make release` that executes `cargo build --release`, so check out the file
+even if you don't use `make` to see useful commands.
+
+#### Tests
+
+- Rust tests: `make test`.
+- Linter: `make lint`.
+- Format checker: `make fmt-check`.
+- Shell tests: `make test-cmd`. They are written in Shell script using 
+  the test framework [Bats](https://bats-core.readthedocs.io).
+- Rust integration tests: `make test-integration`. **Very slow**, they execute
+  tests to check functionality that involves _pose → docker → docker registry_.
+- Shell integration tests: `make test-cmd-integration`, **Very slow**, they execute
+  tests to check functionality that involves _pose → docker → docker registry_ calling
+  the command line.
+- Run all the tests at once: `make test-all-fast`, including all the above,
+  except integrations one.
+- Run **all the tests** at once: `make test-all`, include all tests, it's the
+  equivalent of what CI executes on each push to GitHub.
+
+
+If you get an error like `make: ./tests/bats/bin/bats: Command not found`,
+it’s because you cloned the project without the `--recurse-submodules` git argument.
+Execute first `git submodule update --init` to clone the submodules within the `pose` folder.
+
 
 ## About
 

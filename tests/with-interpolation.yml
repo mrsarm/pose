@@ -1,0 +1,5 @@
+services:
+  app:
+    image: "app:${TAG:-latest}"
+    ports:
+      - "8000:8000"

@@ -1,0 +1,43 @@
+version: '3.7'
+
+services:
+  app1:
+    image: some-image
+    ports:
+      - "8000:8000"
+  app2:
+    image: another-image:2.0
+    ports:
+      - "9000:9000"
+    environment:
+      PORT: 9000
+      ADMIN: admin123
+      REDIS: redis://redis:6379/1
+      TITLE: "App 2"
+    depends_on:
+      - app1
+  postgres:
+    image: postgres:15
+    ports:
+      - "5432:5432"
+    environment:
+      - PORT=5432
+      - POSTGRES_PASSWORD=password
+    volumes:
+        - data:/var/lib/postgresql/data
+
+volumes:
+  data:
+    driver: local
+
+configs:
+  httpd-config:
+    external: true
+
+secrets:
+  server-certificate:
+    external: true
+
+networks:
+  front-tier: {}
+  back-tier: {}

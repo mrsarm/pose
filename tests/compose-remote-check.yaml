@@ -1,0 +1,7 @@
+services:
+    django-coleman:
+        image: mrsarm/django-coleman:1.0.1
+    mongotail:
+        image: mrsarm/mongotail:3.1
+    mysql:
+        image: bitnami/kafka:3.0
