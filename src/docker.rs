@@ -1,9 +1,9 @@
 use crate::verbose::Verbosity;
-use colored::Colorize;
+use crate::{cmd_call, cmd_call_to_string, cmd_exit_code, cmd_write_stderr, cmd_write_stdout};
+
 use std::env::var;
-use std::io::Write;
-use std::process::{Command, Output, Stdio};
-use std::{io, process};
+use std::io;
+use std::process::Output;
 
 pub struct DockerCommand {
     pub docker_bin: String,
@@ -19,21 +19,7 @@ impl DockerCommand {
     }
 
     pub fn call_to_string(&self, args: &[&str]) -> String {
-        format!(
-            "{} {}",
-            self.docker_bin,
-            args.iter()
-                .map(|s| {
-                    if s.contains(' ') {
-                        // TODO better escaping
-                        format!("\"{s}\"")
-                    } else {
-                        s.to_string()
-                    }
-                })
-                .collect::<Vec<_>>()
-                .join(" ")
-        )
+        cmd_call_to_string(&self.docker_bin, args)
     }
 
     pub fn call_cmd(
@@ -42,20 +28,13 @@ impl DockerCommand {
         output_stdout: bool,
         output_stderr: bool,
     ) -> io::Result<Output> {
-        if matches!(self.verbosity, Verbosity::Verbose) {
-            eprintln!("{}: {}", "DEBUG".green(), self.call_to_string(args));
-        }
-        let mut binding = Command::new(&self.docker_bin);
-        let mut command = binding.args(args);
-        command = command.stdout(Stdio::piped()).stderr(Stdio::piped());
-        let output = command.output()?; // an error not from the command but trying to execute it
-        if output_stdout {
-            self.write_stdout(&output.stdout);
-        }
-        if output_stderr {
-            self.write_stderr(&output.stderr);
-        }
-        Ok(output)
+        cmd_call(
+            &self.docker_bin,
+            args,
+            output_stdout,
+            output_stderr,
+            &self.verbosity,
+        )
     }
 
     pub fn call_compose_cmd(
@@ -116,37 +95,14 @@ impl DockerCommand {
     }
 
     pub fn write_stderr(&self, stderr: &[u8]) {
-        io::stderr().write_all(stderr).unwrap_or_else(|e| {
-            eprintln!(
-                "{}: writing {} stderr: {}",
-                "ERROR".red(),
-                self.docker_bin,
-                e
-            );
-            process::exit(151);
-        });
+        cmd_write_stderr(&self.docker_bin, stderr);
     }
 
     pub fn write_stdout(&self, stdout: &[u8]) {
-        io::stdout().write_all(stdout).unwrap_or_else(|e| {
-            eprintln!(
-                "{}: writing {} stdout: {}",
-                "ERROR".red(),
-                self.docker_bin,
-                e
-            );
-            process::exit(151);
-        });
+        cmd_write_stdout(&self.docker_bin, stdout);
     }
 
     pub fn exit_code(&self, output: &Output) -> i32 {
-        output.status.code().unwrap_or_else(|| {
-            eprintln!(
-                "{}: {} process terminated by signal",
-                "ERROR".red(),
-                self.docker_bin
-            );
-            process::exit(10)
-        })
+        cmd_exit_code(&self.docker_bin, output)
     }
 }

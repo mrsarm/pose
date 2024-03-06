@@ -113,26 +113,21 @@ $ pose list -p oneline images
 mrsarm/api mrsarm/api-worker mrsarm/web postgres:15 rabbitmq:3
 ```
 
-There are 3 images, all starting with the prefix "mrsarm/" that are used
-for our services _api_, _api-worker_ and _web_ (and the CI task
-_web-ci-tests_), while the other images _postgres:15_ and _rabbitmq:3_
-are DB services used by our services.
+There are 3 images, all starting with the prefix "mrsarm/" that are used for our services
+_api_, _api-worker_ and _web_ (and the CI task _web-ci-tests_), while the other images
+_postgres:15_ and _rabbitmq:3_ are DB services used by our services.
 
-We can run all services with: `docker compose up -d` in detached
-mode, and then the CI tests with `docker compose run web-ci-tests`,
-so in what way is useful `pose` other than just allow us to
-list services or images? well, now imagine that you are developing
-a new feature in the API to add a new field, and that feature
-will be used by the webapp and the worker as well, but you
-need to develop the feature across your apps one by one, each
-on its corresponding git repo in a feature branch, then release  
-the feature in the docker registry, e.g. you start developing
-the feature in the `mrsarm/api` repo under the `client-vat-field`
-branch. When you push something to the branch, your CI environment
-will create a new image `mrsarm/api:client-vat-field`. Then
-you do the same for the webapp, the resulting image is
-`mrsarm/web:client-vat-field`, and so on. So in the `compose.yaml`
-file you can replace the following:
+We can run all services and then the CI tests with `docker compose run web-ci-tests`,
+so in what way is useful `pose` other than just allow us to list services or images?
+well, now imagine that you are developing a new feature in the API to add a new field,
+and that feature will be used by the webapp and the worker as well, but you need to
+develop the feature across your apps one by one, each on its corresponding git repo in
+a feature branch, then release the feature in the docker registry, e.g. you start
+developing the feature in the `mrsarm/api` repo under the `client-vat-field` branch.
+When you push something to the branch, your CI environment will create a new image
+`mrsarm/api:client-vat-field`. Then you do the same for the webapp, the resulting
+image is`mrsarm/web:client-vat-field`, and so on. So in the `compose.yaml` file you
+can replace the following:
 
 ```yaml
 services:
@@ -233,7 +228,6 @@ services:
 Then the services and the tests can be executed with:
 
 ```shell
-docker compose -f ci.yaml up -d
 docker compose -f ci.yaml run web-ci-tests
 ```
 

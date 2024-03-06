@@ -7,13 +7,41 @@ use std::{fs, process};
 //mod lib;
 //use crate::lib::ComposeYaml;
 use docker_pose::{
-    get_service, get_yml_content, print_names, unwrap_filter_regex, unwrap_filter_tag, Args,
-    Commands, ComposeYaml, DockerCommand, Objects, RemoteTag, Verbosity,
+    cmd_get_success_output_or_fail, get_service, get_slug, get_yml_content, print_names,
+    unwrap_filter_regex, unwrap_filter_tag, Args, Commands, ComposeYaml, DockerCommand, GitCommand,
+    Objects, RemoteTag, Verbosity,
 };
 
 fn main() {
     let args = Args::parse();
     let verbosity = args.get_verbosity();
+    if let Commands::Slug { text } = args.command {
+        if let Some(t) = text {
+            println!("{}", get_slug(&t));
+        } else {
+            let command = GitCommand::new(verbosity.clone());
+            let result_output = command.get_current_branch();
+            match result_output {
+                Ok(output) => {
+                    // git was successfully called by pose, but docker compose
+                    // could either succeed or fail executing its task
+                    let slug = cmd_get_success_output_or_fail(
+                        &command.git_bin,
+                        "rev-parse",
+                        output,
+                        args.quiet,
+                    );
+                    println!("{}", get_slug(&slug));
+                }
+                Err(e) => {
+                    // git couldn't be called by pose or the OS
+                    eprintln!("{}: calling git: {}", "ERROR".red(), e);
+                    process::exit(21);
+                }
+            }
+        }
+        process::exit(0)
+    }
     if args.filenames.len() > 1 && args.no_docker {
         eprintln!(
             "{}: multiple '{}' arguments cannot be used with '{}'",
@@ -39,33 +67,12 @@ fn main() {
                 Ok(output) => {
                     // docker was successfully called by pose, but docker compose
                     // could either succeed or fail executing its task
-                    match output.status.success() {
-                        true => {
-                            // success !
-                            if !args.quiet && !output.stderr.is_empty() {
-                                // although, there may be warnings sent to the stderr
-                                eprintln!(
-                                    "{}: the following are warnings from compose:",
-                                    "WARN".yellow()
-                                );
-                                command.write_stderr(&output.stderr);
-                            }
-                            String::from_utf8(output.stdout).unwrap_or_else(|e| {
-                                eprintln!(
-                                    "{}: deserializing {} compose output: {}",
-                                    "ERROR".red(),
-                                    command.docker_bin,
-                                    e,
-                                );
-                                process::exit(17);
-                            })
-                        }
-                        false => {
-                            eprintln!("{}: calling compose", "ERROR".red());
-                            command.write_stderr(&output.stderr);
-                            process::exit(command.exit_code(&output));
-                        }
-                    }
+                    cmd_get_success_output_or_fail(
+                        &command.docker_bin,
+                        "compose",
+                        output,
+                        args.quiet,
+                    )
                 }
                 Err(e) => {
                     // docker couldn't be called by pose or the OS
@@ -124,6 +131,7 @@ fn main() {
                 remote_tag_filter,
                 ignore_unauthorized,
                 remote_progress,
+                no_slug,
                 threads,
             } => {
                 let tag = unwrap_filter_tag(filter.as_deref());
@@ -131,6 +139,7 @@ fn main() {
                 let remote_tag = remote_tag.map(|tag| RemoteTag {
                     ignore_unauthorized,
                     threads,
+                    no_slug,
                     remote_tag: tag,
                     remote_tag_filter: regex,
                     verbosity: verbosity.clone(),
@@ -167,12 +176,14 @@ fn main() {
             remote_tag_filter,
             ignore_unauthorized,
             remote_progress,
+            no_slug,
             threads,
         } => {
             let regex = unwrap_filter_regex(remote_tag_filter.as_deref());
             let remote_tag = remote_tag.map(|tag| RemoteTag {
                 ignore_unauthorized,
                 threads,
+                no_slug,
                 remote_tag: tag,
                 remote_tag_filter: regex,
                 verbosity: verbosity.clone(),
@@ -201,6 +212,9 @@ fn main() {
             } else {
                 println!("{}", result);
             }
+        }
+        Commands::Slug { .. } => {
+            // This was attended above in the code
         }
     }
 }

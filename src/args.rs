@@ -81,6 +81,9 @@ pub enum Commands {
         /// ignore unauthorized errors from docker when fetching remote tags info
         #[arg(long, requires("remote_tag"))]
         ignore_unauthorized: bool,
+        /// Don't slugify the value from --remote-tag
+        #[arg(long, requires("remote_tag"))]
+        no_slug: bool,
         /// Outputs in stderr the progress of fetching remote tags, similar to the --verbose argument,
         /// but without all the other details --verbose adds
         #[arg(long, requires("remote_tag"))]
@@ -88,6 +91,17 @@ pub enum Commands {
         /// max number of threads used to fetch remote images info
         #[arg(long, value_name = "NUM", default_value_t = 4, value_parser = positive_less_than_32, requires("remote_tag"))]
         threads: u8,
+    },
+    /// Outputs a slug version of the text passed, or the slug version of the
+    /// current branch.
+    ///
+    /// It's the same slug used with the --remote-tag value in other commands.
+    /// The output is a lowercase version with all no-alphanumeric
+    /// characters translated into the "-" symbol, except for the char ".", to make it
+    /// compatible with a valid docker tag name.
+    Slug {
+        /// text to slugify, if not provided the current branch name is used
+        text: Option<String>,
     },
 }
 
@@ -116,6 +130,9 @@ pub enum Objects {
         /// ignore unauthorized errors from docker when fetching remote tags info
         #[arg(long, requires("remote_tag"))]
         ignore_unauthorized: bool,
+        /// Don't slugify the value from --remote-tag
+        #[arg(long, requires("remote_tag"))]
+        no_slug: bool,
         /// Outputs in stderr the progress of fetching remote tags, similar to the --verbose argument,
         /// but without all the other details --verbose adds
         #[arg(long, requires("remote_tag"))]
