@@ -39,6 +39,8 @@ where looking for something or summarize it can involve more work than without u
 
 #### Run feature branches in a CI environment
 
+> 🐳 🖥 ⏯ ✅
+
 Read this [doc](Run-CI-envs.md) to learn how to use it for CI environments to run integration tests.
 
 #### Find that service you don't remember exactly the name
@@ -140,13 +142,18 @@ included in your `$PATH` variable, like `$HOME/.local/bin`.
 
 ### Build and run tests
 
+> 🚧 **Pose Development area!** this is NOT a section of how to run tests with pose
+> but instructions of how to build and test pose itself.
+
 There is a `Makefile` that can be used to execute most of the development tasks,
 like `make release` that executes `cargo build --release`, so check out the file
 even if you don't use `make` to see useful commands.
 
 #### Tests
 
-- Rust tests: `make test`.
+- Run **all the tests** at once (slow): `make test-all`, include all tests, it's the
+  equivalent of what CI executes on each push to GitHub.
+- Rust unit tests: `make test`.
 - Linter: `make lint`.
 - Format checker: `make fmt-check`.
 - Shell tests: `make test-cmd`. They are written in Shell script using 
@@ -158,9 +165,6 @@ even if you don't use `make` to see useful commands.
   the command line.
 - Run all the tests at once: `make test-all-fast`, including all the above,
   except integrations one.
-- Run **all the tests** at once: `make test-all`, include all tests, it's the
-  equivalent of what CI executes on each push to GitHub.
-
 
 If you get an error like `make: ./tests/bats/bin/bats: Command not found`,
 it’s because you cloned the project without the `--recurse-submodules` git argument.
