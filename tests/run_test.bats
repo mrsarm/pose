@@ -6,7 +6,7 @@ setup() {
 @test "can run --version" {
     run target/debug/pose --version
     assert_success
-    assert_output --partial 'docker-pose 0.3'
+    assert_output --partial 'docker-pose 0.4'
 }
 
 @test "can run --help" {
