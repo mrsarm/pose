@@ -2,6 +2,7 @@ use crate::{get_compose_filename, ComposeYaml, Formats, Verbosity};
 use colored::Colorize;
 use regex::Regex;
 use serde_yaml::Mapping;
+use std::cmp::min;
 use std::vec::IntoIter;
 use std::{fs, process};
 
@@ -93,4 +94,27 @@ pub fn get_yml_content(filename: Option<&str>, verbosity: Verbosity) -> String {
         eprintln!("{}: reading compose file: {}", "ERROR".red(), err);
         process::exit(11);
     })
+}
+
+/// Get a slug version of the text compatible with
+/// a tag name to be published in a docker registry, with
+/// only number, letters, the symbol "-" or the symbol ".",
+/// and no more than 63 characters long, all in lowercase.
+pub fn get_slug(input: &str) -> String {
+    let text = input.trim();
+    let text = text.to_lowercase();
+    let len = min(text.len(), 63);
+    let mut result = String::with_capacity(len);
+
+    for c in text.chars() {
+        if result.len() >= len {
+            break;
+        }
+        if c.is_ascii_alphanumeric() || c == '.' {
+            result.push(c);
+        } else {
+            result.push('-');
+        }
+    }
+    result
 }

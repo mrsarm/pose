@@ -1,5 +1,5 @@
 use crate::verbose::Verbosity;
-use crate::DockerCommand;
+use crate::{get_slug, DockerCommand};
 use colored::*;
 use regex::Regex;
 use serde_yaml::{to_string, Error, Mapping, Value};
@@ -29,12 +29,23 @@ pub struct RemoteTag {
     pub remote_tag_filter: Option<(Regex, bool)>,
     /// docker may require to be logged-in to fetch some images info
     pub ignore_unauthorized: bool,
+    /// Don't slugify the value from remote_tag.
+    pub no_slug: bool,
     /// verbosity used when fetching remote images info
     pub verbosity: Verbosity,
     /// show remote tags found while they are fetched
     pub remote_progress_verbosity: Verbosity,
     /// max number of threads used to fetch remote images info
     pub threads: u8,
+}
+
+impl RemoteTag {
+    pub fn get_remote_tag(&self) -> String {
+        match self.no_slug {
+            true => self.remote_tag.clone(),
+            false => get_slug(&self.remote_tag),
+        }
+    }
 }
 
 impl ComposeYaml {
@@ -141,7 +152,8 @@ impl ComposeYaml {
                         if let Some(image) = last {
                             let image_parts = image.split(':').collect::<Vec<_>>();
                             let image_name = *image_parts.first().unwrap();
-                            let remote_image = format!("{}:{}", image_name, remote.remote_tag);
+                            let remote_image =
+                                format!("{}:{}", image_name, remote.get_remote_tag());
                             if remote
                                 .remote_tag_filter
                                 .as_ref()

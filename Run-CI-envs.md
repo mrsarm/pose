@@ -233,7 +233,6 @@ services:
 Then the services and the tests can be executed with:
 
 ```shell
-docker compose -f ci.yaml up -d
 docker compose -f ci.yaml run web-ci-tests
 ```
 

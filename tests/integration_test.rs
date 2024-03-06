@@ -25,6 +25,7 @@ services:
         remote_tag: "16.2".to_string(),
         remote_tag_filter: None,
         ignore_unauthorized: true,
+        no_slug: false,
         verbosity: Verbosity::default(),
         remote_progress_verbosity: Verbosity::Quiet,
         threads: 4,
@@ -56,6 +57,7 @@ services:
         remote_tag: "8".to_string(),
         remote_tag_filter: Some((Regex::new(r"mysql").unwrap(), true)),
         ignore_unauthorized: true,
+        no_slug: false,
         verbosity: Verbosity::default(),
         remote_progress_verbosity: Verbosity::Quiet,
         threads: 2,
@@ -94,10 +96,11 @@ services:
     image: rabbitmq
     "#;
     let remote_tag = RemoteTag {
-        remote_tag: "8".to_string(),
+        remote_tag: "8 ".to_string(), // the white space will be trimmed when slug is used
         // Exclude postgres
         remote_tag_filter: Some((Regex::new(r"postgres").unwrap(), false)),
         ignore_unauthorized: true,
+        no_slug: false,
         verbosity: Verbosity::default(),
         remote_progress_verbosity: Verbosity::Quiet,
         threads: 2,
