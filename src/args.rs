@@ -55,11 +55,10 @@ fn positive_less_than_32(s: &str) -> Result<u8, String> {
 }
 
 fn string_no_empty(s: &str) -> Result<String, String> {
-    if s.len() >= 1 {
-        Ok(s.to_string())
-    } else {
-        Err("must be at least 1 character long".to_string())
+    if s.is_empty() {
+        return Err("must be at least 1 character long".to_string());
     }
+    Ok(s.to_string())
 }
 
 #[derive(Subcommand)]
@@ -165,7 +164,7 @@ pub enum Objects {
     /// List service's environment variables
     Envs {
         #[arg(value_parser = string_no_empty)]
-        service: String
+        service: String,
     },
 }
 
