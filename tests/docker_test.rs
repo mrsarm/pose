@@ -73,8 +73,11 @@ fn run_docker_config_multiple_files() {
         .unwrap();
     assert!(output.status.success());
     let stdout = String::from_utf8(output.stdout).unwrap();
-    // VAR=val was turned into VAR: val
-    assert!(stdout.contains("POSTGRES_PASSWORD: password"));
+    // VAR=val may be turned into VAR: val depending on the docker compose version
+    assert!(
+        stdout.contains("POSTGRES_PASSWORD: password")
+            || stdout.contains("POSTGRES_PASSWORD=password")
+    );
     assert!(stdout.contains("image: nginx"));
 }
 

@@ -86,7 +86,7 @@ pub fn get_yml_content(filename: Option<&str>, verbosity: Verbosity) -> String {
     let filename = get_compose_filename(filename, verbosity).unwrap_or_else(|err| {
         eprintln!("{}: {}", "ERROR".red(), err);
         if err.contains("no such file or directory") {
-            process::exit(14);
+            process::exit(1);
         }
         process::exit(10);
     });

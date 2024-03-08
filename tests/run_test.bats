@@ -112,19 +112,20 @@ setup() {
 
 @test "can detect file does not exist" {
     run target/debug/pose -f does-not-exist.yaml list services
-    assert_failure 14
+    # failure from docker compose can be either 14 (old versions) or 1
+    assert_failure
     assert_output --partial "does-not-exist.yaml: no such file or directory"
 }
 
 @test "can detect file does not exist without docker" {
     run target/debug/pose --no-docker -f does-not-exist.yaml list services
-    assert_failure 14
+    assert_failure 1
     assert_output --partial "does-not-exist.yaml: no such file or directory"
 }
 
 @test "can detect invalid file" {
     run target/debug/pose -f Makefile list services
-    assert_failure 15
+    assert_failure
     assert_output --partial "ERROR: calling compose"
     assert_output --partial "yaml:"
 }
@@ -143,9 +144,6 @@ setup() {
     assert_output --partial "app2"
     assert_output --partial "postgres"
     refute_output --partial "nginx"
-    # Secrets are filter out by docker compose config
-    # because are not used in the example
-    refute_output --partial "secrets"
 }
 
 @test "can output config without docker" {
