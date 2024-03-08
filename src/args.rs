@@ -54,6 +54,14 @@ fn positive_less_than_32(s: &str) -> Result<u8, String> {
     number_range(s, 1, 32)
 }
 
+fn string_no_empty(s: &str) -> Result<String, String> {
+    if s.len() >= 1 {
+        Ok(s.to_string())
+    } else {
+        Err("must be at least 1 character long".to_string())
+    }
+}
+
 #[derive(Subcommand)]
 pub enum Commands {
     /// List objects found in the compose file: services, volumes, ...
@@ -71,12 +79,12 @@ pub enum Commands {
         output: Option<String>,
         /// output with remote tag passed instead of the one set in the file
         /// if exists in the docker registry
-        #[arg(short, long, value_name = "TAG")]
+        #[arg(short, long, value_name = "TAG", value_parser = string_no_empty)]
         remote_tag: Option<String>,
         /// use with --remote-tag to filter which images should be checked
         /// whether the remote tag exists or not.
         /// Currently only regex=EXPR or regex!=EXPR are supported
-        #[arg(long, value_name = "FILTER", requires("remote_tag"))]
+        #[arg(long, value_name = "FILTER", requires("remote_tag"), value_parser = string_no_empty)]
         remote_tag_filter: Option<String>,
         /// ignore unauthorized errors from docker when fetching remote tags info
         #[arg(long, requires("remote_tag"))]
@@ -101,6 +109,7 @@ pub enum Commands {
     /// compatible with a valid docker tag name.
     Slug {
         /// text to slugify, if not provided the current branch name is used
+        #[arg(value_parser = string_no_empty)]
         text: Option<String>,
     },
 }
@@ -118,14 +127,14 @@ pub enum Objects {
         filter: Option<String>,
         /// print with remote tag passed instead of the one set in the file
         /// if exists in the docker registry
-        #[arg(short, long, value_name = "TAG")]
+        #[arg(short, long, value_name = "TAG", value_parser = string_no_empty)]
         remote_tag: Option<String>,
         /// use with --remote-tag to filter which images should be checked
         /// whether the remote tag exists or not, but images that don't match
         /// the filter are not filtered out from the list printed, only
         /// printed with the tag they have in the compose file.
         /// Currently only regex=EXPR or regex!=EXPR are supported
-        #[arg(long, value_name = "FILTER", requires("remote_tag"))]
+        #[arg(long, value_name = "FILTER", requires("remote_tag"), value_parser = string_no_empty)]
         remote_tag_filter: Option<String>,
         /// ignore unauthorized errors from docker when fetching remote tags info
         #[arg(long, requires("remote_tag"))]
@@ -154,7 +163,10 @@ pub enum Objects {
     /// List profiles
     Profiles,
     /// List service's environment variables
-    Envs { service: String },
+    Envs {
+        #[arg(value_parser = string_no_empty)]
+        service: String
+    },
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, strum_macros::Display)]
