@@ -1,7 +1,7 @@
 //! `pose` is a command line tool to play with 🐳 Docker Compose files.
 
 use clap::Parser;
-use colored::Colorize;
+use colored::*;
 use std::{fs, process};
 
 //mod lib;
@@ -13,6 +13,7 @@ use docker_pose::{
 };
 
 fn main() {
+    setup_terminal();
     let args = Args::parse();
     let verbosity = args.get_verbosity();
     if let Commands::Slug { text } = args.command {
@@ -217,4 +218,14 @@ fn main() {
             // This was attended above in the code
         }
     }
+}
+
+#[cfg(target_os = "windows")]
+fn setup_terminal() {
+    control::set_virtual_terminal(true).unwrap();
+}
+
+#[cfg(not(target_os = "windows"))]
+fn setup_terminal() {
+    // nothing is needed in *nix systems
 }
