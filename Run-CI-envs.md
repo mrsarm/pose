@@ -252,19 +252,19 @@ related with rate limits reached.
 #### Filters
 
 The other argument that allows to speed up the process (and avoid rate limits
-from the docker registry) is `--remote-tag-filter FILTER`, filtering _in_ or _out_
+from the docker registry) is `--tag-filter FILTER`, filtering _in_ or _out_
 what images to check whether a remote tag exists or not when replacing images.
 `FILTER` can be an expression like `regex=NAME` (`=` → _filter ‒ in_) or `regex!=EXPR`
 (`!=` → _filter ‒ out_), where `EXPR` is a regex expression. In our example, all the apps we
 build start with the `mrsarm/` prefix, while other services like the DBs one don't,
 so the best way to check only our apps while ignoring the rest when replacing the tag in
-the image field of each service is using the argument `--remote-tag-filter regex='mrsarm/'`.
+the image field of each service is using the argument `--tag-filter regex='mrsarm/'`.
 The resulting `ci.yaml` will be identical than not using the filter at all, because it's
 unlikely and even undesired to have an official Postgres image `postgres:client-vat-field`,
 but more importantly, the execution in our CI pipeline will be much faster.
 
 ```
-pose config --remote-tag "$GITHUB_REF" --remote-tag-filter regex='mrsarm/' -o ci.yaml --remote-progress
+pose config --remote-tag "$GITHUB_REF" --tag-filter regex='mrsarm/' -o ci.yaml --remote-progress
 
 DEBUG: remote manifest for image postgres ... skipped 
 DEBUG: remote manifest for image rabbitmq ... skipped
@@ -281,5 +281,5 @@ it's an _exclusion_ expression, all images with the string `postgres` or `rabbit
 on it will be ignored when replacing tags:
 
 ```shell
-pose config --remote-tag "$GITHUB_REF" --remote-tag-filter regex!='postgres|rabbitmq' -o ci.yaml --remote-progress
+pose config --remote-tag "$GITHUB_REF" --tag-filter regex!='postgres|rabbitmq' -o ci.yaml --remote-progress
 ```

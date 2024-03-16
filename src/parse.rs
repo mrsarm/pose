@@ -26,7 +26,7 @@ pub struct RemoteTag {
     pub remote_tag: String,
     /// don't replace with remote tag unless this regex match the image name / tag,
     /// in case the bool is false, the replacing is done if the regex doesn't match
-    pub remote_tag_filter: Option<(Regex, bool)>,
+    pub tag_filter: Option<(Regex, bool)>,
     /// docker may require to be logged-in to fetch some images info
     pub ignore_unauthorized: bool,
     /// Don't slugify the value from remote_tag.
@@ -155,7 +155,7 @@ impl ComposeYaml {
                             let remote_image =
                                 format!("{}:{}", image_name, remote.get_remote_tag());
                             if remote
-                                .remote_tag_filter
+                                .tag_filter
                                 .as_ref()
                                 .map(|r| (r.1, r.0.is_match(&image)))
                                 .map(|(affirmative_expr, is_match)| {

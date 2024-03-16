@@ -84,7 +84,7 @@ pub enum Commands {
         /// whether the remote tag exists or not.
         /// Currently only regex=EXPR or regex!=EXPR are supported
         #[arg(long, value_name = "FILTER", requires("remote_tag"), value_parser = string_no_empty)]
-        remote_tag_filter: Option<String>,
+        tag_filter: Option<String>,
         /// ignore unauthorized errors from docker when fetching remote tags info
         #[arg(long, requires("remote_tag"))]
         ignore_unauthorized: bool,
@@ -134,7 +134,7 @@ pub enum Objects {
         /// printed with the tag they have in the compose file.
         /// Currently only regex=EXPR or regex!=EXPR are supported
         #[arg(long, value_name = "FILTER", requires("remote_tag"), value_parser = string_no_empty)]
-        remote_tag_filter: Option<String>,
+        tag_filter: Option<String>,
         /// ignore unauthorized errors from docker when fetching remote tags info
         #[arg(long, requires("remote_tag"))]
         ignore_unauthorized: bool,

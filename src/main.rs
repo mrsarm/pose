@@ -129,20 +129,20 @@ fn main() {
             Objects::Images {
                 filter,
                 remote_tag,
-                remote_tag_filter,
+                tag_filter,
                 ignore_unauthorized,
                 remote_progress,
                 no_slug,
                 threads,
             } => {
                 let tag = unwrap_filter_tag(filter.as_deref());
-                let regex = unwrap_filter_regex(remote_tag_filter.as_deref());
+                let regex = unwrap_filter_regex(tag_filter.as_deref());
                 let remote_tag = remote_tag.map(|tag| RemoteTag {
                     ignore_unauthorized,
                     threads,
                     no_slug,
                     remote_tag: tag,
-                    remote_tag_filter: regex,
+                    tag_filter: regex,
                     verbosity: verbosity.clone(),
                     remote_progress_verbosity: match remote_progress {
                         true => Verbosity::Verbose,
@@ -174,19 +174,19 @@ fn main() {
         Commands::Config {
             output,
             remote_tag,
-            remote_tag_filter,
+            tag_filter,
             ignore_unauthorized,
             remote_progress,
             no_slug,
             threads,
         } => {
-            let regex = unwrap_filter_regex(remote_tag_filter.as_deref());
+            let regex = unwrap_filter_regex(tag_filter.as_deref());
             let remote_tag = remote_tag.map(|tag| RemoteTag {
                 ignore_unauthorized,
                 threads,
                 no_slug,
                 remote_tag: tag,
-                remote_tag_filter: regex,
+                tag_filter: regex,
                 verbosity: verbosity.clone(),
                 remote_progress_verbosity: match remote_progress {
                     true => Verbosity::Verbose,

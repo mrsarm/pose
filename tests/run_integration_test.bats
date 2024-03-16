@@ -5,7 +5,7 @@ setup() {
 
 @test "can list images with remote tag" {
     run target/debug/pose --verbose -f tests/compose-remote-check.yaml \
-        list images --remote-tag 3.1.1 --remote-tag-filter "regex=mrsarm/"
+        list images --remote-tag 3.1.1 --tag-filter "regex=mrsarm/"
     assert_success
     assert_output --partial "DEBUG: docker compose -f tests/compose-remote-check.yaml config"
     # django-mongotail:3.1.1 is checked, and it's found
@@ -27,7 +27,7 @@ setup() {
 
 @test "can output config with remote tag" {
     run target/debug/pose --verbose -f tests/compose-remote-check.yaml --no-normalize \
-        config --remote-tag 3.1.1 --remote-tag-filter "regex=mrsarm/"
+        config --remote-tag 3.1.1 --tag-filter "regex=mrsarm/"
     assert_success
     assert_output --partial "DEBUG: docker compose -f tests/compose-remote-check.yaml config"
     # django-mongotail:3.1.1 is checked, and it's found
