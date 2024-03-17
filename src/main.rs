@@ -9,7 +9,7 @@ use std::{fs, process};
 use docker_pose::{
     cmd_get_success_output_or_fail, get_service, get_slug, get_yml_content, print_names,
     unwrap_filter_regex, unwrap_filter_tag, Args, Commands, ComposeYaml, DockerCommand, GitCommand,
-    Objects, RemoteTag, Verbosity,
+    Objects, ReplaceTag, Verbosity,
 };
 
 fn main() {
@@ -137,7 +137,7 @@ fn main() {
             } => {
                 let tag = unwrap_filter_tag(filter.as_deref());
                 let regex = unwrap_filter_regex(tag_filter.as_deref());
-                let remote_tag = remote_tag.map(|tag| RemoteTag {
+                let remote_tag = remote_tag.map(|tag| ReplaceTag {
                     ignore_unauthorized,
                     threads,
                     no_slug,
@@ -181,7 +181,7 @@ fn main() {
             threads,
         } => {
             let regex = unwrap_filter_regex(tag_filter.as_deref());
-            let remote_tag = remote_tag.map(|tag| RemoteTag {
+            let remote_tag = remote_tag.map(|tag| ReplaceTag {
                 ignore_unauthorized,
                 threads,
                 no_slug,

@@ -1,7 +1,7 @@
 /// The following tests are all marked as "ignore" to not delay tests execution,
 /// but running the tests with the `--ignored` flag will make them to be executed,
 /// (or use `make test-integration`).
-use docker_pose::{ComposeYaml, RemoteTag, Verbosity};
+use docker_pose::{ComposeYaml, ReplaceTag, Verbosity};
 use pretty_assertions::assert_eq;
 use regex::Regex;
 use serde_yaml::Error;
@@ -21,7 +21,7 @@ services:
     image: rabbitmq:3
     ";
     let compose = ComposeYaml::new(&yaml)?;
-    let remote_tag = RemoteTag {
+    let remote_tag = ReplaceTag {
         remote_tag: "16.2".to_string(),
         tag_filter: None,
         ignore_unauthorized: true,
@@ -53,7 +53,7 @@ services:
     image: mysql:7
     ";
     let compose = ComposeYaml::new(&yaml)?;
-    let remote_tag = RemoteTag {
+    let remote_tag = ReplaceTag {
         remote_tag: "8".to_string(),
         tag_filter: Some((Regex::new(r"mysql").unwrap(), true)),
         ignore_unauthorized: true,
@@ -95,7 +95,7 @@ services:
   rabbitmq:
     image: rabbitmq
     "#;
-    let remote_tag = RemoteTag {
+    let remote_tag = ReplaceTag {
         remote_tag: "8 ".to_string(), // the white space will be trimmed when slug is used
         // Exclude postgres
         tag_filter: Some((Regex::new(r"postgres").unwrap(), false)),

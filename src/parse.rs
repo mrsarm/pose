@@ -21,7 +21,7 @@ pub struct ComposeYaml {
 }
 
 #[derive(Clone)]
-pub struct RemoteTag {
+pub struct ReplaceTag {
     /// replace tag with remote tag if exists
     pub remote_tag: String,
     /// don't replace with remote tag unless this regex match the image name / tag,
@@ -39,7 +39,7 @@ pub struct RemoteTag {
     pub threads: u8,
 }
 
-impl RemoteTag {
+impl ReplaceTag {
     pub fn get_remote_tag(&self) -> String {
         match self.no_slug {
             true => self.remote_tag.clone(),
@@ -94,7 +94,7 @@ impl ComposeYaml {
     pub fn get_images(
         &self,
         filter_by_tag: Option<&str>,
-        remote_tag: Option<&RemoteTag>,
+        remote_tag: Option<&ReplaceTag>,
     ) -> Option<Vec<String>> {
         let services = self.get_services()?;
         let mut images = services
@@ -214,7 +214,7 @@ impl ComposeYaml {
     /// Returns whether the manifest, handling possible errors.
     /// When the manifest exists, means the image exists for the
     /// particular tag passed in the remote registry.
-    fn has_manifest(remote: &RemoteTag, remote_image: &str, show_remote_progress: bool) -> bool {
+    fn has_manifest(remote: &ReplaceTag, remote_image: &str, show_remote_progress: bool) -> bool {
         let command = DockerCommand::new(remote.verbosity.clone());
         let inspect_output = command
             .get_manifest_inspect(remote_image)
@@ -267,7 +267,7 @@ impl ComposeYaml {
     /// Update all services' image attributes with the remote
     /// tag passed if the tag exists in the remote registry, otherwise
     /// the image value is untouched.
-    pub fn update_images_with_remote_tag(&mut self, remote_tag: &RemoteTag) {
+    pub fn update_images_with_remote_tag(&mut self, remote_tag: &ReplaceTag) {
         if let Some(images_with_remote) = self.get_images(None, Some(remote_tag)) {
             let services_names = self
                 .get_root_element_names("services")
