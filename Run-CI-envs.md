@@ -168,24 +168,24 @@ error like `manifest for mrsarm/api-worker:client-vat-field not found`.
 In the example above you only need to run the services with the tag `client-vat-field`
 if the tag exists in the registry to be pulled of by compose, otherwise keep using the
 same `latest` tag set in the compose file, or whatever tag is set. You can achieve this with
-the command `pose config` using the `--remote-tag TAG` argument, that like
+the command `pose config` using the `--tag TAG` argument, that like
 `docker compose config` it outputs a new compose file but pre-processing it according to
 the arguments received. The following will output a new `ci.yaml` file with the desired
 output, while showing in the terminal (or the CI logs) what is doing while fetching the
 information from the docker registry:
 
 ```shell
-pose config --remote-tag "$GITHUB_REF" --remote-progress -o ci.yaml
+pose config --tag "$GITHUB_REF" --progress -o ci.yaml
 ```
 
 The remote progress will look like the following:
 
 ```
-DEBUG: remote manifest for image mrsarm/web:client-vat-field ... found 
-DEBUG: remote manifest for image mrsarm/api-worker:client-vat-field ... not found 
-DEBUG: remote manifest for image postgres:client-vat-field ... not found 
-DEBUG: remote manifest for image mrsarm/api:client-vat-field ... found 
-DEBUG: remote manifest for image rabbitmq:client-vat-field ... not found 
+DEBUG: manifest for image mrsarm/web:client-vat-field ... found 
+DEBUG: manifest for image mrsarm/api-worker:client-vat-field ... not found 
+DEBUG: manifest for image postgres:client-vat-field ... not found 
+DEBUG: manifest for image mrsarm/api:client-vat-field ... found 
+DEBUG: manifest for image rabbitmq:client-vat-field ... not found 
 ```
 
 In the progress shown we can see the images found with the tag `client-vat-field`
@@ -264,13 +264,13 @@ unlikely and even undesired to have an official Postgres image `postgres:client-
 but more importantly, the execution in our CI pipeline will be much faster.
 
 ```
-pose config --remote-tag "$GITHUB_REF" --tag-filter regex='mrsarm/' -o ci.yaml --remote-progress
+pose config --tag "$GITHUB_REF" --tag-filter regex='mrsarm/' -o ci.yaml --progress
 
-DEBUG: remote manifest for image postgres ... skipped 
-DEBUG: remote manifest for image rabbitmq ... skipped
-DEBUG: remote manifest for image mrsarm/web:client-vat-field ... found 
-DEBUG: remote manifest for image mrsarm/api-worker:client-vat-field ... not found 
-DEBUG: remote manifest for image mrsarm/api:client-vat-field ... found 
+DEBUG: manifest for image postgres ... skipped 
+DEBUG: manifest for image rabbitmq ... skipped
+DEBUG: manifest for image mrsarm/web:client-vat-field ... found 
+DEBUG: manifest for image mrsarm/api-worker:client-vat-field ... not found 
+DEBUG: manifest for image mrsarm/api:client-vat-field ... found 
 ```
 
 Use a _filter ‒ out_ expression when not all images follow certain convention like
@@ -281,5 +281,5 @@ it's an _exclusion_ expression, all images with the string `postgres` or `rabbit
 on it will be ignored when replacing tags:
 
 ```shell
-pose config --remote-tag "$GITHUB_REF" --tag-filter regex!='postgres|rabbitmq' -o ci.yaml --remote-progress
+pose config --tag "$GITHUB_REF" --tag-filter regex!='postgres|rabbitmq' -o ci.yaml --progress
 ```

@@ -21,16 +21,16 @@ services:
     image: rabbitmq:3
     ";
     let compose = ComposeYaml::new(&yaml)?;
-    let remote_tag = ReplaceTag {
-        remote_tag: "16.2".to_string(),
+    let replace_tag = ReplaceTag {
+        tag: "16.2".to_string(),
         tag_filter: None,
         ignore_unauthorized: true,
         no_slug: false,
         verbosity: Verbosity::default(),
-        remote_progress_verbosity: Verbosity::Quiet,
+        progress_verbosity: Verbosity::Quiet,
         threads: 4,
     };
-    let images = compose.get_images(None, Some(&remote_tag));
+    let images = compose.get_images(None, Some(&replace_tag));
     assert_eq!(
         images,
         Some(vec![
@@ -53,16 +53,16 @@ services:
     image: mysql:7
     ";
     let compose = ComposeYaml::new(&yaml)?;
-    let remote_tag = ReplaceTag {
-        remote_tag: "8".to_string(),
+    let replace_tag = ReplaceTag {
+        tag: "8".to_string(),
         tag_filter: Some((Regex::new(r"mysql").unwrap(), true)),
         ignore_unauthorized: true,
         no_slug: false,
         verbosity: Verbosity::default(),
-        remote_progress_verbosity: Verbosity::Quiet,
+        progress_verbosity: Verbosity::Quiet,
         threads: 2,
     };
-    let images = compose.get_images(None, Some(&remote_tag));
+    let images = compose.get_images(None, Some(&replace_tag));
     assert_eq!(
         images,
         Some(vec![
@@ -95,18 +95,18 @@ services:
   rabbitmq:
     image: rabbitmq
     "#;
-    let remote_tag = ReplaceTag {
-        remote_tag: "8 ".to_string(), // the white space will be trimmed when slug is used
+    let replace_tag = ReplaceTag {
+        tag: "8 ".to_string(), // the white space will be trimmed when slug is used
         // Exclude postgres
         tag_filter: Some((Regex::new(r"postgres").unwrap(), false)),
         ignore_unauthorized: true,
         no_slug: false,
         verbosity: Verbosity::default(),
-        remote_progress_verbosity: Verbosity::Quiet,
+        progress_verbosity: Verbosity::Quiet,
         threads: 2,
     };
     let mut compose = ComposeYaml::new(&yaml)?;
-    compose.update_images_with_remote_tag(&remote_tag);
+    compose.update_images_tag(&replace_tag);
     let new_yaml = compose.to_string();
     assert!(new_yaml.is_ok());
     assert_eq!(expected_yaml.to_string().trim(), new_yaml.unwrap().trim());

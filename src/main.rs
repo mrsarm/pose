@@ -128,28 +128,28 @@ fn main() {
             }
             Objects::Images {
                 filter,
-                remote_tag,
+                tag,
                 tag_filter,
                 ignore_unauthorized,
-                remote_progress,
+                progress,
                 no_slug,
                 threads,
             } => {
-                let tag = unwrap_filter_tag(filter.as_deref());
                 let regex = unwrap_filter_regex(tag_filter.as_deref());
-                let remote_tag = remote_tag.map(|tag| ReplaceTag {
+                let replace_tag = tag.map(|tag| ReplaceTag {
+                    tag,
                     ignore_unauthorized,
                     threads,
                     no_slug,
-                    remote_tag: tag,
                     tag_filter: regex,
                     verbosity: verbosity.clone(),
-                    remote_progress_verbosity: match remote_progress {
+                    progress_verbosity: match progress {
                         true => Verbosity::Verbose,
                         false => Verbosity::Quiet,
                     },
                 });
-                let op = compose.get_images(tag, remote_tag.as_ref());
+                let filter_by_tag = unwrap_filter_tag(filter.as_deref());
+                let op = compose.get_images(filter_by_tag, replace_tag.as_ref());
                 match op {
                     None => {
                         eprintln!("{}: No services section found", "ERROR".red());
@@ -173,28 +173,28 @@ fn main() {
         },
         Commands::Config {
             output,
-            remote_tag,
+            tag,
             tag_filter,
             ignore_unauthorized,
-            remote_progress,
+            progress,
             no_slug,
             threads,
         } => {
             let regex = unwrap_filter_regex(tag_filter.as_deref());
-            let remote_tag = remote_tag.map(|tag| ReplaceTag {
+            let replace_tag = tag.map(|tag| ReplaceTag {
+                tag,
                 ignore_unauthorized,
                 threads,
                 no_slug,
-                remote_tag: tag,
                 tag_filter: regex,
                 verbosity: verbosity.clone(),
-                remote_progress_verbosity: match remote_progress {
+                progress_verbosity: match progress {
                     true => Verbosity::Verbose,
                     false => Verbosity::Quiet,
                 },
             });
-            if let Some(remote_t) = remote_tag {
-                compose.update_images_with_remote_tag(&remote_t);
+            if let Some(remote_t) = replace_tag {
+                compose.update_images_tag(&remote_t);
             }
             let result = compose.to_string().unwrap_or_else(|err| {
                 eprintln!("{}: {}", "ERROR".red(), err);

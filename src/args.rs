@@ -76,33 +76,33 @@ pub enum Commands {
         /// Save to file (default to stdout)
         #[arg(short, long, value_name = "FILE")]
         output: Option<String>,
-        /// output with remote tag passed instead of the one set in the file
-        /// if exists in the docker registry
+        /// output image attributes in services with tag passed instead of the one set in the file
+        /// if they exist locally or in the remote docker registry
         #[arg(short, long, value_name = "TAG", value_parser = string_no_empty)]
-        remote_tag: Option<String>,
-        /// use with --remote-tag to filter which images should be checked
-        /// whether the remote tag exists or not.
+        tag: Option<String>,
+        /// use with --tag to filter which images should be checked whether the
+        /// tag exists or not locally or remotely.
         /// Currently only regex=EXPR or regex!=EXPR are supported
-        #[arg(long, value_name = "FILTER", requires("remote_tag"), value_parser = string_no_empty)]
+        #[arg(long, value_name = "FILTER", requires("tag"), value_parser = string_no_empty)]
         tag_filter: Option<String>,
         /// ignore unauthorized errors from docker when fetching remote tags info
-        #[arg(long, requires("remote_tag"))]
+        #[arg(long, requires("tag"))]
         ignore_unauthorized: bool,
-        /// Don't slugify the value from --remote-tag
-        #[arg(long, requires("remote_tag"))]
+        /// Don't slugify the value from --tag
+        #[arg(long, requires("tag"))]
         no_slug: bool,
-        /// Outputs in stderr the progress of fetching remote tags, similar to the --verbose argument,
+        /// Outputs in stderr the progress of fetching the tags info, similar to --verbose,
         /// but without all the other details --verbose adds
-        #[arg(long, requires("remote_tag"))]
-        remote_progress: bool,
+        #[arg(long, requires("tag"))]
+        progress: bool,
         /// max number of threads used to fetch remote images info
-        #[arg(long, value_name = "NUM", default_value_t = 4, value_parser = positive_less_than_32, requires("remote_tag"))]
+        #[arg(long, value_name = "NUM", default_value_t = 4, value_parser = positive_less_than_32, requires("tag"))]
         threads: u8,
     },
     /// Outputs a slug version of the text passed, or the slug version of the
     /// current branch.
     ///
-    /// It's the same slug used with the --remote-tag value in other commands.
+    /// It's the same slug used with the --tag value in other commands.
     /// The output is a lowercase version with all no-alphanumeric
     /// characters translated into the "-" symbol, except for the char ".", to make it
     /// compatible with a valid docker tag name.
@@ -119,34 +119,33 @@ pub enum Objects {
     Services,
     /// List images
     Images {
-        /// filter by a property, if --remote-tag is used as well,
+        /// filter by a property, if --tag is used as well,
         /// this filter is applied first, filtering out images that
         /// don't match the filter. Currently only tag=TAG is supported
         #[arg(short, long)]
         filter: Option<String>,
-        /// print with remote tag passed instead of the one set in the file
-        /// if exists in the docker registry
+        /// print images with the tag passed instead of the one set in the file if they exist
+        /// locally or in the remote docker registry
         #[arg(short, long, value_name = "TAG", value_parser = string_no_empty)]
-        remote_tag: Option<String>,
-        /// use with --remote-tag to filter which images should be checked
-        /// whether the remote tag exists or not, but images that don't match
-        /// the filter are not filtered out from the list printed, only
-        /// printed with the tag they have in the compose file.
+        tag: Option<String>,
+        /// use with --tag to filter which images should be checked whether the tag exists
+        /// or not, but images that don't match the filter are not filtered out from the list
+        /// printed, only printed with the tag they have in the compose file.
         /// Currently only regex=EXPR or regex!=EXPR are supported
-        #[arg(long, value_name = "FILTER", requires("remote_tag"), value_parser = string_no_empty)]
+        #[arg(long, value_name = "FILTER", requires("tag"), value_parser = string_no_empty)]
         tag_filter: Option<String>,
         /// ignore unauthorized errors from docker when fetching remote tags info
-        #[arg(long, requires("remote_tag"))]
+        #[arg(long, requires("tag"))]
         ignore_unauthorized: bool,
-        /// Don't slugify the value from --remote-tag
-        #[arg(long, requires("remote_tag"))]
+        /// Don't slugify the value from --tag
+        #[arg(long, requires("tag"))]
         no_slug: bool,
-        /// Outputs in stderr the progress of fetching remote tags, similar to the --verbose argument,
+        /// Outputs in stderr the progress of fetching the tags info, similar to --verbose
         /// but without all the other details --verbose adds
-        #[arg(long, requires("remote_tag"))]
-        remote_progress: bool,
-        /// max number of threads used to fetch remote images info
-        #[arg(long, value_name = "NUM", default_value_t = 4, value_parser = positive_less_than_32, requires("remote_tag"))]
+        #[arg(long, requires("tag"))]
+        progress: bool,
+        /// max number of threads used to fetch images info
+        #[arg(long, value_name = "NUM", default_value_t = 4, value_parser = positive_less_than_32, requires("tag"))]
         threads: u8,
     },
     /// List service's depends_on
