@@ -133,6 +133,7 @@ fn main() {
                 ignore_unauthorized,
                 progress,
                 no_slug,
+                offline,
                 threads,
             } => {
                 let regex = unwrap_filter_regex(tag_filter.as_deref());
@@ -141,6 +142,7 @@ fn main() {
                     ignore_unauthorized,
                     threads,
                     no_slug,
+                    offline,
                     tag_filter: regex,
                     verbosity: verbosity.clone(),
                     progress_verbosity: match progress {
@@ -178,12 +180,14 @@ fn main() {
             ignore_unauthorized,
             progress,
             no_slug,
+            offline,
             threads,
         } => {
             let regex = unwrap_filter_regex(tag_filter.as_deref());
             let replace_tag = tag.map(|tag| ReplaceTag {
                 tag,
                 ignore_unauthorized,
+                offline,
                 threads,
                 no_slug,
                 tag_filter: regex,

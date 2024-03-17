@@ -5,6 +5,7 @@ use docker_pose::{ComposeYaml, DockerCommand, ReplaceTag, Verbosity};
 use pretty_assertions::assert_eq;
 use regex::Regex;
 use serde_yaml::Error;
+use serial_test::serial;
 
 #[test]
 #[ignore]
@@ -26,6 +27,7 @@ services:
         tag_filter: None,
         ignore_unauthorized: true,
         no_slug: false,
+        offline: false,
         verbosity: Verbosity::default(),
         progress_verbosity: Verbosity::Quiet,
         threads: 4,
@@ -58,6 +60,7 @@ services:
         tag_filter: Some((Regex::new(r"mysql").unwrap(), true)),
         ignore_unauthorized: true,
         no_slug: false,
+        offline: false,
         verbosity: Verbosity::default(),
         progress_verbosity: Verbosity::Quiet,
         threads: 2,
@@ -101,6 +104,7 @@ services:
         tag_filter: Some((Regex::new(r"postgres").unwrap(), false)),
         ignore_unauthorized: true,
         no_slug: false,
+        offline: false,
         verbosity: Verbosity::default(),
         progress_verbosity: Verbosity::Quiet,
         threads: 2,
@@ -115,10 +119,13 @@ services:
 
 #[test]
 #[ignore]
+#[serial]
 fn get_config_with_local_tag() -> Result<(), Error> {
     // first pull in advance the image:tag desired
     let command = DockerCommand::new(Verbosity::default());
-    command.pull_image("hello-world:linux", true, true).unwrap();
+    command
+        .pull_image("hello-world:linux", false, false)
+        .unwrap();
 
     let yaml = r#"
 services:
@@ -135,6 +142,51 @@ services:
         tag_filter: None,
         ignore_unauthorized: true,
         no_slug: false,
+        offline: false,
+        verbosity: Verbosity::default(),
+        progress_verbosity: Verbosity::Quiet,
+        threads: 2,
+    };
+    let mut compose = ComposeYaml::new(&yaml)?;
+    compose.update_images_tag(&replace_tag);
+    let new_yaml = compose.to_string();
+    assert!(new_yaml.is_ok());
+    assert_eq!(expected_yaml.to_string().trim(), new_yaml.unwrap().trim());
+    Ok(())
+}
+
+#[test]
+#[ignore]
+#[serial]
+fn get_config_only_with_local_tag() -> Result<(), Error> {
+    // first pull in advance the image:tag desired
+    let command = DockerCommand::new(Verbosity::default());
+    command
+        .pull_image("hello-world:latest", false, false)
+        .unwrap();
+
+    let yaml = r#"
+services:
+  hello-world:
+    image: hello-world:linux
+  postgres:
+    image: homeassistant/home-assistant:2024.3
+    "#;
+
+    // homeassistant/home-assistant:latest exists, but not locally
+    let expected_yaml = r#"
+services:
+  hello-world:
+    image: hello-world:latest
+  postgres:
+    image: homeassistant/home-assistant:2024.3
+    "#;
+    let replace_tag = ReplaceTag {
+        tag: "latest".to_string(),
+        tag_filter: None,
+        ignore_unauthorized: true,
+        no_slug: false,
+        offline: true, // don't pull from remote docker registry
         verbosity: Verbosity::default(),
         progress_verbosity: Verbosity::Quiet,
         threads: 2,

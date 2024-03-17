@@ -91,7 +91,10 @@ pub enum Commands {
         /// Don't slugify the value from --tag
         #[arg(long, requires("tag"))]
         no_slug: bool,
-        /// Outputs in stderr the progress of fetching the tags info, similar to --verbose,
+        /// only check --tag TAG with the local docker registry
+        #[arg(long, requires("tag"))]
+        offline: bool,
+        /// outputs in stderr the progress of fetching the tags info, similar to --verbose,
         /// but without all the other details --verbose adds
         #[arg(long, requires("tag"))]
         progress: bool,
@@ -140,7 +143,10 @@ pub enum Objects {
         /// Don't slugify the value from --tag
         #[arg(long, requires("tag"))]
         no_slug: bool,
-        /// Outputs in stderr the progress of fetching the tags info, similar to --verbose
+        /// only check --tag TAG with the local docker registry
+        #[arg(long, requires("tag"))]
+        offline: bool,
+        /// outputs in stderr the progress of fetching the tags info, similar to --verbose
         /// but without all the other details --verbose adds
         #[arg(long, requires("tag"))]
         progress: bool,

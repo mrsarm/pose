@@ -32,6 +32,8 @@ pub struct ReplaceTag {
     pub ignore_unauthorized: bool,
     /// Don't slugify the value from tag.
     pub no_slug: bool,
+    /// only check tag with the local docker registry
+    pub offline: bool,
     /// verbosity used when fetching remote images info
     pub verbosity: Verbosity,
     /// show tags found while they are fetched
@@ -168,17 +170,18 @@ impl ComposeYaml {
                                 // check whether the image:<tag> exists or not locally
                                 match Self::has_image(&replace, &remote_image, show_progress) {
                                     true => thread_tx.send(remote_image).unwrap(),
-                                    false => {
+                                    false => match replace.offline {
+                                        true => thread_tx.send(image).unwrap(),
                                         // if not exists locally, check remote registry
-                                        match Self::has_manifest(
+                                        false => match Self::has_manifest(
                                             &replace,
                                             &remote_image,
                                             show_progress,
                                         ) {
                                             true => thread_tx.send(remote_image).unwrap(),
                                             false => thread_tx.send(image).unwrap(),
-                                        }
-                                    }
+                                        },
+                                    },
                                 }
                             } else {
                                 // skip the remote check and add it as it is into the list
@@ -246,14 +249,14 @@ impl ComposeYaml {
             let exit_code = command.exit_code(&inspect_output);
             let stderr = String::from_utf8(inspect_output.stderr).unwrap();
             if stderr.to_lowercase().contains("no such image") {
-                // if show_progress {
-                //     eprintln!(
-                //         "{}: local image {} ... {} ",
-                //         "DEBUG".green(),
-                //         remote_image.yellow(),
-                //         "not found".purple()
-                //     );
-                // }
+                if show_progress && replace_tag.offline {
+                    eprintln!(
+                        "{}: manifest for image {} ... {} ",
+                        "DEBUG".green(),
+                        remote_image.yellow(),
+                        "not found".purple()
+                    );
+                }
                 false
             } else {
                 eprintln!(
