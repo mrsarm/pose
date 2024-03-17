@@ -1,7 +1,7 @@
 /// The following tests are all marked as "ignore" to not delay tests execution,
 /// but running the tests with the `--ignored` flag will make them to be executed,
 /// (or use `make test-integration`).
-use docker_pose::{ComposeYaml, ReplaceTag, Verbosity};
+use docker_pose::{ComposeYaml, DockerCommand, ReplaceTag, Verbosity};
 use pretty_assertions::assert_eq;
 use regex::Regex;
 use serde_yaml::Error;
@@ -99,6 +99,40 @@ services:
         tag: "8 ".to_string(), // the white space will be trimmed when slug is used
         // Exclude postgres
         tag_filter: Some((Regex::new(r"postgres").unwrap(), false)),
+        ignore_unauthorized: true,
+        no_slug: false,
+        verbosity: Verbosity::default(),
+        progress_verbosity: Verbosity::Quiet,
+        threads: 2,
+    };
+    let mut compose = ComposeYaml::new(&yaml)?;
+    compose.update_images_tag(&replace_tag);
+    let new_yaml = compose.to_string();
+    assert!(new_yaml.is_ok());
+    assert_eq!(expected_yaml.to_string().trim(), new_yaml.unwrap().trim());
+    Ok(())
+}
+
+#[test]
+#[ignore]
+fn get_config_with_local_tag() -> Result<(), Error> {
+    // first pull in advance the image:tag desired
+    let command = DockerCommand::new(Verbosity::default());
+    command.pull_image("hello-world:linux", true, true).unwrap();
+
+    let yaml = r#"
+services:
+  hello-world:
+    image: hello-world
+    "#;
+    let expected_yaml = r#"
+services:
+  hello-world:
+    image: hello-world:linux
+    "#;
+    let replace_tag = ReplaceTag {
+        tag: "linux".to_string(),
+        tag_filter: None,
         ignore_unauthorized: true,
         no_slug: false,
         verbosity: Verbosity::default(),
