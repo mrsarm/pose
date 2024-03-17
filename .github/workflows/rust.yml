@@ -11,20 +11,42 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+
     - uses: actions/checkout@v3
       with:
         submodules: true
+
+    - id: skip_check
+      name: Skip Check
+      uses: fkirc/skip-duplicate-actions@master
+      with:
+        concurrent_skipping: 'same_content_newer'
+        paths_ignore: '["**.md"]'
+
     - name: Build
       run: make build
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
+
     - name: Lint
       run: make lint
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
+
     - name: Format Check
       run: make fmt-check
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
+
     - name: Run tests
       run: make test
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
+
     - name: Run shell tests
       run: make test-cmd
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
+
     - name: Run integration pose → docker → network tests
       run: make test-integration
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
+
     - name: Run shell integration pose → docker → network tests
       run: make test-cmd-integration
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' }}

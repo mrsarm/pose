@@ -1,7 +1,7 @@
 //! `pose` is a command line tool to play with 🐳 Docker Compose files.
 
 use clap::Parser;
-use colored::Colorize;
+use colored::*;
 use std::{fs, process};
 
 //mod lib;
@@ -9,10 +9,11 @@ use std::{fs, process};
 use docker_pose::{
     cmd_get_success_output_or_fail, get_service, get_slug, get_yml_content, print_names,
     unwrap_filter_regex, unwrap_filter_tag, Args, Commands, ComposeYaml, DockerCommand, GitCommand,
-    Objects, RemoteTag, Verbosity,
+    Objects, ReplaceTag, Verbosity,
 };
 
 fn main() {
+    setup_terminal();
     let args = Args::parse();
     let verbosity = args.get_verbosity();
     if let Commands::Slug { text } = args.command {
@@ -127,28 +128,30 @@ fn main() {
             }
             Objects::Images {
                 filter,
-                remote_tag,
-                remote_tag_filter,
+                tag,
+                tag_filter,
                 ignore_unauthorized,
-                remote_progress,
+                progress,
                 no_slug,
+                offline,
                 threads,
             } => {
-                let tag = unwrap_filter_tag(filter.as_deref());
-                let regex = unwrap_filter_regex(remote_tag_filter.as_deref());
-                let remote_tag = remote_tag.map(|tag| RemoteTag {
+                let regex = unwrap_filter_regex(tag_filter.as_deref());
+                let replace_tag = tag.map(|tag| ReplaceTag {
+                    tag,
                     ignore_unauthorized,
                     threads,
                     no_slug,
-                    remote_tag: tag,
-                    remote_tag_filter: regex,
+                    offline,
+                    tag_filter: regex,
                     verbosity: verbosity.clone(),
-                    remote_progress_verbosity: match remote_progress {
+                    progress_verbosity: match progress {
                         true => Verbosity::Verbose,
                         false => Verbosity::Quiet,
                     },
                 });
-                let op = compose.get_images(tag, remote_tag.as_ref());
+                let filter_by_tag = unwrap_filter_tag(filter.as_deref());
+                let op = compose.get_images(filter_by_tag, replace_tag.as_ref());
                 match op {
                     None => {
                         eprintln!("{}: No services section found", "ERROR".red());
@@ -172,28 +175,30 @@ fn main() {
         },
         Commands::Config {
             output,
-            remote_tag,
-            remote_tag_filter,
+            tag,
+            tag_filter,
             ignore_unauthorized,
-            remote_progress,
+            progress,
             no_slug,
+            offline,
             threads,
         } => {
-            let regex = unwrap_filter_regex(remote_tag_filter.as_deref());
-            let remote_tag = remote_tag.map(|tag| RemoteTag {
+            let regex = unwrap_filter_regex(tag_filter.as_deref());
+            let replace_tag = tag.map(|tag| ReplaceTag {
+                tag,
                 ignore_unauthorized,
+                offline,
                 threads,
                 no_slug,
-                remote_tag: tag,
-                remote_tag_filter: regex,
+                tag_filter: regex,
                 verbosity: verbosity.clone(),
-                remote_progress_verbosity: match remote_progress {
+                progress_verbosity: match progress {
                     true => Verbosity::Verbose,
                     false => Verbosity::Quiet,
                 },
             });
-            if let Some(remote_t) = remote_tag {
-                compose.update_images_with_remote_tag(&remote_t);
+            if let Some(remote_t) = replace_tag {
+                compose.update_images_tag(&remote_t);
             }
             let result = compose.to_string().unwrap_or_else(|err| {
                 eprintln!("{}: {}", "ERROR".red(), err);
@@ -217,4 +222,14 @@ fn main() {
             // This was attended above in the code
         }
     }
+}
+
+#[cfg(target_os = "windows")]
+fn setup_terminal() {
+    control::set_virtual_terminal(true).unwrap();
+}
+
+#[cfg(not(target_os = "windows"))]
+fn setup_terminal() {
+    // nothing is needed in *nix systems
 }

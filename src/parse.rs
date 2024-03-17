@@ -21,29 +21,32 @@ pub struct ComposeYaml {
 }
 
 #[derive(Clone)]
-pub struct RemoteTag {
-    /// replace tag with remote tag if exists
-    pub remote_tag: String,
-    /// don't replace with remote tag unless this regex match the image name / tag,
+pub struct ReplaceTag {
+    /// replace tag with local or remote tag if exists
+    pub tag: String,
+    /// don't replace with tag unless this regex matches the image name / tag,
     /// in case the bool is false, the replacing is done if the regex doesn't match
-    pub remote_tag_filter: Option<(Regex, bool)>,
-    /// docker may require to be logged-in to fetch some images info
+    pub tag_filter: Option<(Regex, bool)>,
+    /// docker may require to be logged-in to fetch some images info, with
+    /// `true` unauthorized errors are ignored
     pub ignore_unauthorized: bool,
-    /// Don't slugify the value from remote_tag.
+    /// Don't slugify the value from tag.
     pub no_slug: bool,
+    /// only check tag with the local docker registry
+    pub offline: bool,
     /// verbosity used when fetching remote images info
     pub verbosity: Verbosity,
-    /// show remote tags found while they are fetched
-    pub remote_progress_verbosity: Verbosity,
+    /// show tags found while they are fetched
+    pub progress_verbosity: Verbosity,
     /// max number of threads used to fetch remote images info
     pub threads: u8,
 }
 
-impl RemoteTag {
+impl ReplaceTag {
     pub fn get_remote_tag(&self) -> String {
         match self.no_slug {
-            true => self.remote_tag.clone(),
-            false => get_slug(&self.remote_tag),
+            true => self.tag.clone(),
+            false => get_slug(&self.tag),
         }
     }
 }
@@ -94,7 +97,7 @@ impl ComposeYaml {
     pub fn get_images(
         &self,
         filter_by_tag: Option<&str>,
-        remote_tag: Option<&RemoteTag>,
+        tag: Option<&ReplaceTag>,
     ) -> Option<Vec<String>> {
         let services = self.get_services()?;
         let mut images = services
@@ -117,9 +120,9 @@ impl ComposeYaml {
             .collect::<Vec<_>>();
         images.sort();
         images.dedup();
-        if let Some(remote) = remote_tag {
-            let show_remote_progress = matches!(remote.verbosity, Verbosity::Verbose)
-                || matches!(remote.remote_progress_verbosity, Verbosity::Verbose);
+        if let Some(replace_tag) = tag {
+            let show_progress = matches!(replace_tag.verbosity, Verbosity::Verbose)
+                || matches!(replace_tag.progress_verbosity, Verbosity::Verbose);
             let input = Arc::new(Mutex::new(
                 images
                     .iter()
@@ -127,12 +130,12 @@ impl ComposeYaml {
                     .map(|e| e.to_string())
                     .collect::<Vec<String>>(),
             ));
-            let remote_arc = Arc::new(remote.clone());
+            let replace_arc = Arc::new(replace_tag.clone());
             let mut updated_images: Vec<String> = Vec::with_capacity(images.len());
             let (tx, rx): (Sender<String>, Receiver<String>) = mpsc::channel();
             let mut thread_children = Vec::new();
-            let nthreads = max(1, min(images.len(), remote.threads as usize));
-            if matches!(remote.verbosity, Verbosity::Verbose) {
+            let nthreads = max(1, min(images.len(), replace_tag.threads as usize));
+            if matches!(replace_tag.verbosity, Verbosity::Verbose) {
                 eprintln!(
                     "{}: spawning {} threads to fetch remote info from {} images",
                     "DEBUG".green(),
@@ -142,7 +145,7 @@ impl ComposeYaml {
             }
             for _ in 0..nthreads {
                 let input = Arc::clone(&input);
-                let remote = Arc::clone(&remote_arc);
+                let replace = Arc::clone(&replace_arc);
                 let thread_tx = tx.clone();
                 let child = thread::spawn(move || {
                     loop {
@@ -153,9 +156,9 @@ impl ComposeYaml {
                             let image_parts = image.split(':').collect::<Vec<_>>();
                             let image_name = *image_parts.first().unwrap();
                             let remote_image =
-                                format!("{}:{}", image_name, remote.get_remote_tag());
-                            if remote
-                                .remote_tag_filter
+                                format!("{}:{}", image_name, replace.get_remote_tag());
+                            if replace
+                                .tag_filter
                                 .as_ref()
                                 .map(|r| (r.1, r.0.is_match(&image)))
                                 .map(|(affirmative_expr, is_match)| {
@@ -164,20 +167,27 @@ impl ComposeYaml {
                                 })
                                 .unwrap_or(true)
                             {
-                                // check whether the image:<remote_tag> exists or not
-                                match Self::has_manifest(
-                                    &remote,
-                                    &remote_image,
-                                    show_remote_progress,
-                                ) {
+                                // check whether the image:<tag> exists or not locally
+                                match Self::has_image(&replace, &remote_image, show_progress) {
                                     true => thread_tx.send(remote_image).unwrap(),
-                                    false => thread_tx.send(image).unwrap(),
+                                    false => match replace.offline {
+                                        true => thread_tx.send(image).unwrap(),
+                                        // if not exists locally, check remote registry
+                                        false => match Self::has_manifest(
+                                            &replace,
+                                            &remote_image,
+                                            show_progress,
+                                        ) {
+                                            true => thread_tx.send(remote_image).unwrap(),
+                                            false => thread_tx.send(image).unwrap(),
+                                        },
+                                    },
                                 }
                             } else {
                                 // skip the remote check and add it as it is into the list
-                                if show_remote_progress {
+                                if show_progress {
                                     eprintln!(
-                                        "{}: remote manifest for image {} ... {} ",
+                                        "{}: manifest for image {} ... {} ",
                                         "DEBUG".green(),
                                         image_name.yellow(),
                                         "skipped".bright_black()
@@ -211,11 +221,60 @@ impl ComposeYaml {
         Some(images.iter().map(|i| i.to_string()).collect::<Vec<_>>())
     }
 
-    /// Returns whether the manifest, handling possible errors.
+    /// Returns whether the image exists locally, handling possible errors.
+    /// When the image exists, means the image exists for the
+    /// particular tag passed in the local registry.
+    fn has_image(replace_tag: &ReplaceTag, remote_image: &str, show_progress: bool) -> bool {
+        let command = DockerCommand::new(replace_tag.verbosity.clone());
+        let inspect_output = command.get_image_inspect(remote_image).unwrap_or_else(|e| {
+            eprintln!(
+                "{}: fetching image manifest locally for {}: {}",
+                "ERROR".red(),
+                remote_image,
+                e
+            );
+            process::exit(151);
+        });
+        if inspect_output.status.success() {
+            if show_progress {
+                eprintln!(
+                    "{}: manifest for image {} ... {} ",
+                    "DEBUG".green(),
+                    remote_image.yellow(),
+                    "found".green()
+                );
+            }
+            true
+        } else {
+            let exit_code = command.exit_code(&inspect_output);
+            let stderr = String::from_utf8(inspect_output.stderr).unwrap();
+            if stderr.to_lowercase().contains("no such image") {
+                if show_progress && replace_tag.offline {
+                    eprintln!(
+                        "{}: manifest for image {} ... {} ",
+                        "DEBUG".green(),
+                        remote_image.yellow(),
+                        "not found".purple()
+                    );
+                }
+                false
+            } else {
+                eprintln!(
+                    "{}: fetching local image manifest for {}: {}",
+                    "ERROR".red(),
+                    remote_image,
+                    stderr
+                );
+                process::exit(exit_code);
+            }
+        }
+    }
+
+    /// Returns whether the manifest exists, handling possible errors.
     /// When the manifest exists, means the image exists for the
     /// particular tag passed in the remote registry.
-    fn has_manifest(remote: &RemoteTag, remote_image: &str, show_remote_progress: bool) -> bool {
-        let command = DockerCommand::new(remote.verbosity.clone());
+    fn has_manifest(replace_tag: &ReplaceTag, remote_image: &str, show_progress: bool) -> bool {
+        let command = DockerCommand::new(replace_tag.verbosity.clone());
         let inspect_output = command
             .get_manifest_inspect(remote_image)
             .unwrap_or_else(|e| {
@@ -228,9 +287,9 @@ impl ComposeYaml {
                 process::exit(151);
             });
         if inspect_output.status.success() {
-            if show_remote_progress {
+            if show_progress {
                 eprintln!(
-                    "{}: remote manifest for image {} ... {} ",
+                    "{}: manifest for image {} ... {} ",
                     "DEBUG".green(),
                     remote_image.yellow(),
                     "found".green()
@@ -240,12 +299,12 @@ impl ComposeYaml {
         } else {
             let exit_code = command.exit_code(&inspect_output);
             let stderr = String::from_utf8(inspect_output.stderr).unwrap();
-            if stderr.contains("no such manifest")
-                || (remote.ignore_unauthorized && stderr.contains("unauthorized:"))
+            if stderr.to_lowercase().contains("no such manifest")
+                || (replace_tag.ignore_unauthorized && stderr.contains("unauthorized:"))
             {
-                if show_remote_progress {
+                if show_progress {
                     eprintln!(
-                        "{}: remote manifest for image {} ... {} ",
+                        "{}: manifest for image {} ... {} ",
                         "DEBUG".green(),
                         remote_image.yellow(),
                         "not found".purple()
@@ -264,11 +323,11 @@ impl ComposeYaml {
         }
     }
 
-    /// Update all services' image attributes with the remote
-    /// tag passed if the tag exists in the remote registry, otherwise
+    /// Update all services' image attributes with the tag passed if the
+    /// tag exists locally or in the remote registry, otherwise
     /// the image value is untouched.
-    pub fn update_images_with_remote_tag(&mut self, remote_tag: &RemoteTag) {
-        if let Some(images_with_remote) = self.get_images(None, Some(remote_tag)) {
+    pub fn update_images_tag(&mut self, replace_tag: &ReplaceTag) {
+        if let Some(images_with_remote) = self.get_images(None, Some(replace_tag)) {
             let services_names = self
                 .get_root_element_names("services")
                 .iter()

@@ -94,6 +94,19 @@ impl DockerCommand {
         self.call_cmd(&["manifest", "inspect", "--insecure", image], false, false)
     }
 
+    pub fn get_image_inspect(&self, image: &str) -> io::Result<Output> {
+        self.call_cmd(&["image", "inspect", image], false, false)
+    }
+
+    pub fn pull_image(
+        &self,
+        image: &str,
+        output_stdout: bool,
+        output_stderr: bool,
+    ) -> io::Result<Output> {
+        self.call_cmd(&["pull", image], output_stdout, output_stderr)
+    }
+
     pub fn write_stderr(&self, stderr: &[u8]) {
         cmd_write_stderr(&self.docker_bin, stderr);
     }
