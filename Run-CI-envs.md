@@ -254,6 +254,16 @@ related with rate limits reached.
 With the flag `--offline` pose will check whether the tag passed exists or not
 only in your local registry, useful for local testing.
 
+Normally you will build images locally on each local repo and you may want to run
+the tests in the same way CI does. If you also followed the convention of naming your
+releases with the same name as the branch, you can use `pose slug` that outputs the
+current name of the branch but post-processed to avoid issues with not allowed
+chars like "/" that is turned into "-".
+
+```shell
+pose config -t "$(pose slug)" --tag-filter regex='mrsarm/' -o ci.yaml
+```
+
 #### Filters
 
 The other argument that allows to speed up the process (and avoid rate limits
@@ -269,7 +279,7 @@ unlikely and even undesired to have an official Postgres image `postgres:client-
 but more importantly, the execution in our CI pipeline will be much faster.
 
 ```
-pose config --tag "$GITHUB_REF" --tag-filter regex='mrsarm/' -o ci.yaml --progress
+pose config -t "$GITHUB_REF" --tag-filter regex='mrsarm/' -o ci.yaml --progress
 
 DEBUG: manifest for image postgres ... skipped 
 DEBUG: manifest for image rabbitmq ... skipped
@@ -286,5 +296,5 @@ it's an _exclusion_ expression, all images with the string `postgres` or `rabbit
 on it will be ignored when replacing tags:
 
 ```shell
-pose config --tag "$GITHUB_REF" --tag-filter regex!='postgres|rabbitmq' -o ci.yaml --progress
+pose config -t "$GITHUB_REF" --tag-filter regex!='postgres|rabbitmq' -o ci.yaml --progress
 ```
