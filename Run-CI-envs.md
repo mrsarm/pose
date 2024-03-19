@@ -249,6 +249,11 @@ The default is 8 threads, and can be increased up to 32, but be carefully with
 it, a high number can lead the docker registry to start responding with errors
 related with rate limits reached.
 
+#### Offline mode
+
+With the flag `--offline` pose will check whether the tag passed exists or not
+only in your local registry, useful for local testing.
+
 #### Filters
 
 The other argument that allows to speed up the process (and avoid rate limits
