@@ -99,7 +99,7 @@ pub enum Commands {
         #[arg(long, requires("tag"))]
         progress: bool,
         /// max number of threads used to fetch remote images info
-        #[arg(long, value_name = "NUM", default_value_t = 4, value_parser = positive_less_than_32, requires("tag"))]
+        #[arg(long, value_name = "NUM", default_value_t = 8, value_parser = positive_less_than_32, requires("tag"))]
         threads: u8,
     },
     /// Outputs a slug version of the text passed, or the slug version of the
@@ -151,7 +151,7 @@ pub enum Objects {
         #[arg(long, requires("tag"))]
         progress: bool,
         /// max number of threads used to fetch images info
-        #[arg(long, value_name = "NUM", default_value_t = 4, value_parser = positive_less_than_32, requires("tag"))]
+        #[arg(long, value_name = "NUM", default_value_t = 8, value_parser = positive_less_than_32, requires("tag"))]
         threads: u8,
     },
     /// List service's depends_on

@@ -245,7 +245,7 @@ The process of checking all the images your compose file has can
 be slow, specially in big app composed of dozens of apps.
 The argument `--threads NUM` allows to specify the max number of parallel
 threads to be used when fetching the images info from the remote registry. 
-The default is 4 threads, and can be increased up to 32, but be carefully with
+The default is 8 threads, and can be increased up to 32, but be carefully with
 it, a high number can lead the docker registry to start responding with errors
 related with rate limits reached.
 
