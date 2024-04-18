@@ -28,14 +28,6 @@ pub struct Args {
     /// Don't check model consistency - warning: may produce invalid Compose output
     #[arg(long, conflicts_with = "no_docker")]
     pub no_consistency: bool,
-
-    /// Don't interpolate environment variables
-    #[arg(long, conflicts_with = "no_docker")]
-    pub no_interpolate: bool,
-
-    /// Don't normalize compose model
-    #[arg(long, conflicts_with = "no_docker")]
-    pub no_normalize: bool,
 }
 
 impl Args {

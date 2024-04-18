@@ -59,8 +59,6 @@ fn main() {
             let result_output = command.call_compose_config(
                 &args.filenames.iter().map(AsRef::as_ref).collect::<Vec<_>>(),
                 args.no_consistency,
-                args.no_interpolate,
-                args.no_normalize,
                 false,
                 false,
             );
