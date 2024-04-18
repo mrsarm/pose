@@ -1,6 +1,6 @@
 [package]
 name = "docker-pose"
-version = "0.4.0-b3"
+version = "0.4.0-b4"
 edition = "2021"
 authors = ["Mariano Ruiz <mrsarm@gmail.com>"]
 description = "Command line tool to play with 🐳 Docker Compose files."
