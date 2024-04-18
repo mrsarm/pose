@@ -26,7 +26,7 @@ setup() {
 }
 
 @test "can output config with remote tag" {
-    run target/debug/pose --verbose -f tests/compose-remote-check.yaml --no-normalize \
+    run target/debug/pose --verbose -f tests/compose-remote-check.yaml \
         config --tag 3.1.1 --tag-filter "regex=mrsarm/"
     assert_success
     assert_output --partial "DEBUG: docker compose -f tests/compose-remote-check.yaml config"

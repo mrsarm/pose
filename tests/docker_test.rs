@@ -66,8 +66,6 @@ fn run_docker_config_multiple_files() {
             &["tests/compose.yaml", "tests/another.yml"],
             false,
             false,
-            false,
-            false,
             true,
         )
         .unwrap();
@@ -85,7 +83,7 @@ fn run_docker_config_multiple_files() {
 fn run_docker_config_file_not_found() {
     let command = DockerCommand::new(Verbose);
     let output = command
-        .call_compose_config(&["does-not-exist.yml"], false, false, false, false, true)
+        .call_compose_config(&["does-not-exist.yml"], false, false, true)
         .unwrap();
     assert!(!output.status.success());
     let stderr = String::from_utf8(output.stderr).unwrap();

@@ -140,15 +140,15 @@ With:
 ```yaml
 services:
     web:
-    image: "mrsarm/api:${GITHUB_REF:-latest}"
+    image: "mrsarm/api:${GITHUB_REF_NAME:-latest}"
 ```
 
-GitHub Actions set the environment variable `GITHUB_REF` with the name of the branch
+GitHub Actions set the environment variable `GITHUB_REF_NAME` with the name of the branch
 the CI task is running against to, so making the change above, `docker compose ...` will
-replace at runtime the expression `mrsarm/web:${GITHUB_REF:-latest}` with
+replace at runtime the expression `mrsarm/web:${GITHUB_REF_NAME:-latest}` with
 `mrsarm/web:client-vat-field`, producing the expected result of executing the tests on the
 image desired, while when running the same compose file locally, the expression will be
-turned into `mrsarm/web:latest` because the env variable `GITHUB_REF` doesn't exist.
+turned into `mrsarm/web:latest` because the env variable `GITHUB_REF_NAME` doesn't exist.
 
 All right, right?
 
@@ -157,16 +157,16 @@ All right, right?
 The problem is, when you move forward with the rest of the apps where you add the feature,
 how your CI environment distinguishes between the services that already
 have the feature developed and published in the docker registry and
-the ones don't? if you add the suffix `${GITHUB_REF:-latest}` to all the
-images (not to the DB images like postgres though), it will work as long as
-all exists in the docker registry, but if let's say `mrsarm/api-worker:client-vat-field`
+the ones don't? if you add the suffix `${GITHUB_REF_NAME:-latest}` to all the
+images in the compose file (not to the DB images like postgres though), it will work as long
+as all exist in the docker registry, but if let's say `mrsarm/api-worker:client-vat-field`
 was not developed and published yet, `docker compose up` will exit with an
 error like `manifest for mrsarm/api-worker:client-vat-field not found`.
 
 #### Pose to the rescue
 
 In the example above you only need to run the services with the tag `client-vat-field`
-if the tag exists in the registry to be pulled of by compose, otherwise keep using the
+if the tag exists in the registry to be pulled by compose, otherwise keep using the
 same `latest` tag set in the compose file, or whatever tag is set. You can achieve this with
 the command `pose config` using the `--tag TAG` argument, that like
 `docker compose config` it outputs a new compose file but pre-processing it according to
@@ -175,7 +175,7 @@ output, while showing in the terminal (or the CI logs) what is doing while fetch
 information from the docker registry:
 
 ```shell
-pose config --tag "$GITHUB_REF" --progress -o ci.yaml
+pose config --tag "$GITHUB_REF_NAME" --progress -o ci.yaml
 ```
 
 The remote progress will look like the following:
@@ -279,7 +279,7 @@ unlikely and even undesired to have an official Postgres image `postgres:client-
 but more importantly, the execution in our CI pipeline will be much faster.
 
 ```
-pose config -t "$GITHUB_REF" --tag-filter regex='mrsarm/' -o ci.yaml --progress
+pose config -t "$GITHUB_REF_NAME" --tag-filter regex='mrsarm/' -o ci.yaml --progress
 
 DEBUG: manifest for image postgres ... skipped 
 DEBUG: manifest for image rabbitmq ... skipped
@@ -296,5 +296,5 @@ it's an _exclusion_ expression, all images with the string `postgres` or `rabbit
 on it will be ignored when replacing tags:
 
 ```shell
-pose config -t "$GITHUB_REF" --tag-filter regex!='postgres|rabbitmq' -o ci.yaml --progress
+pose config -t "$GITHUB_REF_NAME" --tag-filter regex!='postgres|rabbitmq' -o ci.yaml --progress
 ```

@@ -157,14 +157,3 @@ setup() {
     # because are not used in the example
     assert_output --partial "secrets"
 }
-
-@test "can output config managing interpolation" {
-    # With interpolation (default)
-    run target/debug/pose -f tests/with-interpolation.yml config
-    assert_success
-    assert_output --partial 'app:latest'
-    # Without interpolation
-    run target/debug/pose --no-interpolate -f tests/with-interpolation.yml config
-    assert_success
-    assert_output --partial 'app:${TAG:-latest}'
-}
