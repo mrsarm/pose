@@ -11,7 +11,7 @@ repository = "https://github.com/mrsarm/pose"
 categories = ["docker", "command-line-interface"]
 
 [dependencies]
-clap = { version = "4.4", features = ["derive"] }
+clap = { version = "4.5", features = ["derive"] }
 clap-num = "1.1"
 colored = "2.1"
 lazy_static = "1.4"
