@@ -25,7 +25,8 @@ serial_test = "3.0"
 
 [profile.release]
 # This is going to be the default soon if not provided
-strip = "debuginfo"
+opt-level = "s"
+strip = "symbols"
 
 [[bin]]
 name = "pose"
