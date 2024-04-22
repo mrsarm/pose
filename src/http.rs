@@ -7,7 +7,7 @@ use std::{io, process};
 use ureq::{Agent, AgentBuilder, Error};
 use url::Url;
 
-pub fn get_and_save(url: &str, output: Option<&str>) {
+pub fn get_and_save(url: &str, output: Option<&str>, timeout_connect_secs: u16, max_time: u16) {
     let parsed_url = match Url::parse(url) {
         Ok(r) => r,
         Err(e) => {
@@ -30,7 +30,8 @@ pub fn get_and_save(url: &str, output: Option<&str>) {
     };
     let path = Path::new(path);
     let agent: Agent = AgentBuilder::new()
-        .timeout(Duration::from_secs(5)) // TODO add timeout argument
+        .timeout_connect(Duration::from_secs(timeout_connect_secs.into()))
+        .timeout(Duration::from_secs(max_time.into()))
         .user_agent(format!("pose/{}", crate_version!()).as_str())
         .build();
     match agent.get(url).call() {

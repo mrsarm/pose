@@ -113,10 +113,18 @@ pub enum Commands {
     Get {
         #[arg(value_parser = string_no_empty)]
         url: String,
-        // TODO add replacer (check sed), timeout and headers arguments
+        // TODO add replacer (check sed) and headers arguments
         /// Save to file (default use the same filename set in the url)
         #[arg(short, long, value_name = "FILE")]
         output: Option<String>,
+        /// Maximum time in seconds that you allow pose's connection to take.
+        /// This only limits the connection phase, so if pose connects within the
+        /// given period it will continue, if not it will exit with error.
+        #[arg(long, value_name = "SECONDS", default_value_t = 30)]
+        timeout_connect: u16,
+        /// Maximum time in seconds that you allow the whole operation to take.
+        #[arg(short, long, value_name = "SECONDS", default_value_t = 300)]
+        max_time: u16,
     },
 }
 
