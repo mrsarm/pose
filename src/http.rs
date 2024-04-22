@@ -7,7 +7,7 @@ use std::{io, process};
 use ureq::{Agent, AgentBuilder, Error};
 use url::Url;
 
-pub fn get(url: &str) {
+pub fn get_and_save(url: &str) {
     let parsed_url = match Url::parse(url) {
         Ok(r) => r,
         Err(e) => {
@@ -70,4 +70,75 @@ pub fn get(url: &str) {
             process::exit(2);
         }
     }
+}
+
+/// Return a vector with each string equals to the template string, but replacing on each one
+/// the left part of one of the replacers with the right side of the replacer expression.
+/// Each replacer has to have the form "string-to-replace:replacement".
+///
+/// ```
+/// use docker_pose::replace_all;
+///
+/// let replaces = replace_all(
+///     "https://github.com/mrsarm/pose/archive/refs/tags/0.3.0.zip",
+///     vec!["0.3.0:0.4.0".to_string(), "0.3.0:latest".to_string()].as_ref(),
+/// );
+/// assert_eq!(
+///     replaces.unwrap_or_default(),
+///     vec![
+///         "https://github.com/mrsarm/pose/archive/refs/tags/0.4.0.zip".to_string(),
+///         "https://github.com/mrsarm/pose/archive/refs/tags/latest.zip".to_string(),
+///     ],
+/// );
+///
+/// let replaces = replace_all(
+///     "-",
+///     vec!["-:something".to_string(), "-:totally".to_string(), "-:new".to_string()].as_ref()
+/// );
+/// assert_eq!(
+///     replaces.unwrap_or_default(),
+///     vec!["something".to_string(), "totally".to_string(), "new".to_string()],
+/// );
+///
+/// let replaces = replace_all(
+///     "pose-0.3.zip",
+///     vec!["0.3:0.4".to_string(), "missing-separator".to_string()].as_ref(),
+/// );
+/// assert_eq!(
+///     replaces,
+///     Err("Expression \"missing-separator\" doesn't have the separator symbol `:'".to_string())
+/// );
+///
+/// let replaces = replace_all(
+///     "hard-to-replace",
+///     vec!["not-there:something".to_string()].as_ref()
+/// );
+/// assert_eq!(
+///     replaces,
+///     Err("Left part of the expression \"not-there:something\" not found in \"hard-to-replace\"".to_string())
+/// );
+/// ```
+pub fn replace_all(template: &str, replacers: &Vec<String>) -> Result<Vec<String>, String> {
+    let mut v: Vec<String> = Vec::with_capacity(replacers.len());
+    for replacer in replacers {
+        let mut split = replacer.split(':');
+        let left = split.next();
+        let right = split.next();
+        if let Some(right_text) = right {
+            let left_text = left.unwrap();
+            if !template.contains(left_text) {
+                return Err(format!(
+                    "Left part of the expression \"{}\" not found in \"{}\"",
+                    replacer, template,
+                ));
+            }
+            v.push(template.replace(left_text, right_text))
+        } else {
+            return Err(format!(
+                "Expression \"{}\" doesn't have the separator symbol `:'",
+                replacer
+            ));
+        }
+    }
+    Ok(v)
 }

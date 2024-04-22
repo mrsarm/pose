@@ -7,9 +7,9 @@ use std::{fs, process};
 //mod lib;
 //use crate::lib::ComposeYaml;
 use docker_pose::{
-    cmd_get_success_output_or_fail, get, get_service, get_slug, get_yml_content, print_names,
-    unwrap_filter_regex, unwrap_filter_tag, Args, Commands, ComposeYaml, DockerCommand, GitCommand,
-    Objects, ReplaceTag, Verbosity,
+    cmd_get_success_output_or_fail, get_and_save, get_service, get_slug, get_yml_content,
+    print_names, unwrap_filter_regex, unwrap_filter_tag, Args, Commands, ComposeYaml,
+    DockerCommand, GitCommand, Objects, ReplaceTag, Verbosity,
 };
 
 fn main() {
@@ -221,7 +221,7 @@ fn main() {
             // This was attended above in the code
         }
         Commands::Get { url } => {
-            get(&url);
+            get_and_save(&url);
         }
     }
 }
