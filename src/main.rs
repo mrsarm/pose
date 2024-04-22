@@ -7,7 +7,7 @@ use std::{fs, process};
 //mod lib;
 //use crate::lib::ComposeYaml;
 use docker_pose::{
-    cmd_get_success_output_or_fail, get_service, get_slug, get_yml_content, print_names,
+    cmd_get_success_output_or_fail, get, get_service, get_slug, get_yml_content, print_names,
     unwrap_filter_regex, unwrap_filter_tag, Args, Commands, ComposeYaml, DockerCommand, GitCommand,
     Objects, ReplaceTag, Verbosity,
 };
@@ -16,6 +16,7 @@ fn main() {
     setup_terminal();
     let args = Args::parse();
     let verbosity = args.get_verbosity();
+    // TODO check here Commands::Get to avoid compose parsing
     if let Commands::Slug { text } = args.command {
         if let Some(t) = text {
             println!("{}", get_slug(&t));
@@ -218,6 +219,9 @@ fn main() {
         }
         Commands::Slug { .. } => {
             // This was attended above in the code
+        }
+        Commands::Get { url } => {
+            get(&url);
         }
     }
 }

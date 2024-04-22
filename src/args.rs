@@ -106,6 +106,15 @@ pub enum Commands {
         #[arg(value_parser = string_no_empty)]
         text: Option<String>,
     },
+
+    /// Download a file from an HTTP URL, if the resource doesn't exist, fallback
+    /// to another URL provided or generated replacing from the URL given part
+    /// of the path.
+    Get {
+        #[arg(value_parser = string_no_empty)]
+        url: String,
+        // TODO add replacer (check sed), timeout, output and headers arguments
+    },
 }
 
 #[derive(Subcommand, strum_macros::Display, PartialEq)]
