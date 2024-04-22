@@ -113,7 +113,10 @@ pub enum Commands {
     Get {
         #[arg(value_parser = string_no_empty)]
         url: String,
-        // TODO add replacer (check sed), timeout, output and headers arguments
+        // TODO add replacer (check sed), timeout and headers arguments
+        /// Save to file (default use the same filename set in the url)
+        #[arg(short, long, value_name = "FILE")]
+        output: Option<String>,
     },
 }
 

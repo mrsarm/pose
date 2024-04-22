@@ -7,7 +7,7 @@ use std::{io, process};
 use ureq::{Agent, AgentBuilder, Error};
 use url::Url;
 
-pub fn get_and_save(url: &str) {
+pub fn get_and_save(url: &str, output: Option<&str>) {
     let parsed_url = match Url::parse(url) {
         Ok(r) => r,
         Err(e) => {
@@ -16,24 +16,30 @@ pub fn get_and_save(url: &str) {
         }
     };
     let path = if parsed_url.path() == "/" {
-        eprintln!(
-            "{}: URL without filename, you have to provide \
-            the filename where to store the file with the argument {}",
-            "ERROR".red(),
-            "-o, --output".yellow()
-        );
-        process::exit(4); // TODO add -o argument
+        output.unwrap_or_else(|| {
+            eprintln!(
+                "{}: URL without filename, you have to provide \
+                the filename where to store the file with the argument {}",
+                "ERROR".red(),
+                "-o, --output".yellow()
+            );
+            process::exit(4);
+        })
     } else {
         parsed_url.path()
     };
     let path = Path::new(path);
-    let filename = path.file_name().unwrap().to_str().unwrap();
     let agent: Agent = AgentBuilder::new()
         .timeout(Duration::from_secs(5)) // TODO add timeout argument
         .user_agent(format!("pose/{}", crate_version!()).as_str())
         .build();
     match agent.get(url).call() {
         Ok(resp) => {
+            let filename = if let Some(filename) = output {
+                filename
+            } else {
+                path.file_name().unwrap().to_str().unwrap()
+            };
             let mut content = resp.into_reader();
             let mut file = File::create(filename).unwrap_or_else(|e| {
                 eprintln!(

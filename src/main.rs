@@ -43,6 +43,9 @@ fn main() {
             }
         }
         process::exit(0)
+    } else if let Commands::Get { url, output } = args.command {
+        get_and_save(&url, output.as_deref());
+        process::exit(0)
     }
     if args.filenames.len() > 1 && args.no_docker {
         eprintln!(
@@ -217,11 +220,8 @@ fn main() {
                 println!("{}", result);
             }
         }
-        Commands::Slug { .. } => {
+        Commands::Slug { .. } | Commands::Get { .. } => {
             // This was attended above in the code
-        }
-        Commands::Get { url } => {
-            get_and_save(&url);
         }
     }
 }
