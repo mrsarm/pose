@@ -1,5 +1,6 @@
 use crate::verbose::Verbosity;
 use crate::{get_slug, DockerCommand};
+use clap_num::number_range;
 use colored::*;
 use regex::Regex;
 use serde_yaml::{to_string, Error, Mapping, Value};
@@ -499,4 +500,53 @@ pub fn get_compose_filename(
             }
         }
     }
+}
+
+pub fn positive_less_than_32(s: &str) -> Result<u8, String> {
+    number_range(s, 1, 32)
+}
+
+pub fn string_no_empty(s: &str) -> Result<String, &'static str> {
+    if s.is_empty() {
+        return Err("must be at least 1 character long");
+    }
+    Ok(s.to_string())
+}
+
+/// Parser of strings in the form of "text1:text2".
+/// Return a tuple of 2 strings: ("text1, "text2").
+///
+/// ```
+/// use docker_pose::string_script;
+///
+/// assert_eq!(string_script("abc:def"), Ok(("abc".to_string(), "def".to_string())));
+/// assert_eq!(string_script("abc:"), Ok(("abc".to_string(), "".to_string())));
+/// assert_eq!(
+///     string_script("abc:def:more after->:"),
+///     Ok(("abc".to_string(), "def:more after->:".to_string()))
+/// );
+/// assert_eq!(string_script(""), Err("must be at least 2 characters long"));
+/// assert_eq!(string_script("a"), Err("must be at least 2 characters long"));
+/// assert_eq!(string_script("abc"), Err("separator symbol : not found in the expression"));
+/// assert_eq!(string_script(":def"), Err("empty left expression"));
+pub fn string_script(s: &str) -> Result<(String, String), &'static str> {
+    if s.len() < 2 {
+        return Err("must be at least 2 characters long");
+    }
+    let mut split = s.splitn(2, ':');
+    let left = split.next();
+    let right = split.next();
+    if let Some(left_text) = left {
+        if left_text == s {
+            return Err("separator symbol : not found in the expression");
+        }
+        if left_text.is_empty() {
+            return Err("empty left expression");
+        }
+        if let Some(right_text) = right {
+            return Ok((left_text.to_string(), right_text.to_string()));
+        }
+    }
+    // should never end here
+    Err("wrong expression")
 }

@@ -4,19 +4,34 @@ use std::fs::File;
 use std::path::Path;
 use std::time::Duration;
 use std::{io, process};
-use ureq::{Agent, AgentBuilder, Error};
+use ureq::{Agent, AgentBuilder, Error, Response};
 use url::Url;
 
-pub fn get_and_save(url: &str, output: Option<&str>, timeout_connect_secs: u16, max_time: u16) {
-    let parsed_url = match Url::parse(url) {
+pub fn get_and_save(
+    url: &str,
+    script: &Option<(String, String)>,
+    output: &Option<String>,
+    timeout_connect_secs: u16,
+    max_time: u16,
+) {
+    let mut url = url.to_string();
+    let parsed_url = match Url::parse(&url) {
         Ok(r) => r,
         Err(e) => {
-            eprintln!("{}: invalid URL - {}", "ERROR".red(), e);
-            process::exit(3);
+            if let Some(script) = script {
+                url = url.replace(&script.0, &script.1);
+                Url::parse(&url).unwrap_or_else(|e| {
+                    eprintln!("{}: invalid URL and replace script - {}", "ERROR".red(), e);
+                    process::exit(3)
+                })
+            } else {
+                eprintln!("{}: invalid URL - {}", "ERROR".red(), e);
+                process::exit(3);
+            }
         }
     };
     let path = if parsed_url.path() == "/" {
-        output.unwrap_or_else(|| {
+        output.as_ref().unwrap_or_else(|| {
             eprintln!(
                 "{}: URL without filename, you have to provide \
                 the filename where to store the file with the argument {}",
@@ -34,49 +49,57 @@ pub fn get_and_save(url: &str, output: Option<&str>, timeout_connect_secs: u16, 
         .timeout(Duration::from_secs(max_time.into()))
         .user_agent(format!("pose/{}", crate_version!()).as_str())
         .build();
-    match agent.get(url).call() {
+    match agent.get(&url).call() {
         Ok(resp) => {
-            let filename = if let Some(filename) = output {
-                filename
-            } else {
-                path.file_name().unwrap().to_str().unwrap()
-            };
-            let mut content = resp.into_reader();
-            let mut file = File::create(filename).unwrap_or_else(|e| {
-                eprintln!(
-                    "{}: creating file '{}' - {}",
-                    "ERROR".red(),
-                    filename.yellow(),
-                    e
-                );
-                process::exit(5);
-            });
-            io::copy(&mut content, &mut file).unwrap_or_else(|e| {
-                eprintln!(
-                    "{}: writing output to file '{}': {}",
-                    "ERROR".red(),
-                    filename.yellow(),
-                    e
-                );
-                process::exit(6);
-            });
+            save(resp, path, output);
         }
         Err(Error::Status(code, response)) => {
-            eprintln!(
-                "{}: {} {} {}",
-                "ERROR".red(),
-                response.http_version(),
-                code,
-                response.status_text()
-            );
-            eprintln!("{}", response.into_string().unwrap_or("".to_string()));
-            process::exit(1);
+            if response.status() != 404 {
+                eprintln!(
+                    "{}: {} {} {}",
+                    "ERROR".red(),
+                    response.http_version(),
+                    code,
+                    response.status_text()
+                );
+                eprintln!("{}", response.into_string().unwrap_or("".to_string()));
+                process::exit(1);
+            } else {
+                // TODO use script
+            }
         }
         Err(e) => {
             eprintln!("{}: {}", "ERROR".red(), e);
             process::exit(2);
         }
     }
+}
+
+fn save(resp: Response, path: &Path, output: &Option<String>) {
+    let filename = if let Some(filename) = output {
+        filename
+    } else {
+        path.file_name().unwrap().to_str().unwrap()
+    };
+    let mut content = resp.into_reader();
+    let mut file = File::create(filename).unwrap_or_else(|e| {
+        eprintln!(
+            "{}: creating file '{}' - {}",
+            "ERROR".red(),
+            filename.yellow(),
+            e
+        );
+        process::exit(5);
+    });
+    io::copy(&mut content, &mut file).unwrap_or_else(|e| {
+        eprintln!(
+            "{}: writing output to file '{}': {}",
+            "ERROR".red(),
+            filename.yellow(),
+            e
+        );
+        process::exit(6);
+    });
 }
 
 /// Return a vector with each string equals to the template string, but replacing on each one

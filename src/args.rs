@@ -1,7 +1,6 @@
 /// Types to parse the command line arguments with the clap crate.
-use crate::Verbosity;
+use crate::{positive_less_than_32, string_no_empty, string_script, Verbosity};
 use clap::{Parser, Subcommand, ValueEnum};
-use clap_num::number_range;
 use std::cmp::Ord;
 
 #[derive(Parser)]
@@ -40,17 +39,6 @@ impl Args {
             },
         }
     }
-}
-
-fn positive_less_than_32(s: &str) -> Result<u8, String> {
-    number_range(s, 1, 32)
-}
-
-fn string_no_empty(s: &str) -> Result<String, String> {
-    if s.is_empty() {
-        return Err("must be at least 1 character long".to_string());
-    }
-    Ok(s.to_string())
 }
 
 #[derive(Subcommand)]
@@ -108,12 +96,14 @@ pub enum Commands {
     },
 
     /// Download a file from an HTTP URL, if the resource doesn't exist, fallback
-    /// to another URL provided or generated replacing from the URL given part
-    /// of the path.
+    /// to another URL generated editing the URL given with a script provided in the
+    /// form of "text-to-replace:replacer".
     Get {
         #[arg(value_parser = string_no_empty)]
         url: String,
-        // TODO add replacer (check sed) and headers arguments
+        #[arg(value_parser = string_script)]
+        script: Option<(String, String)>,
+        // TODO add headers and progress arguments
         /// Save to file (default use the same filename set in the url)
         #[arg(short, long, value_name = "FILE")]
         output: Option<String>,

@@ -45,12 +45,13 @@ fn main() {
         process::exit(0)
     } else if let Commands::Get {
         url,
+        script,
         output,
         timeout_connect,
         max_time,
     } = args.command
     {
-        get_and_save(&url, output.as_deref(), timeout_connect, max_time);
+        get_and_save(&url, &script, &output, timeout_connect, max_time);
         process::exit(0)
     }
     if args.filenames.len() > 1 && args.no_docker {
