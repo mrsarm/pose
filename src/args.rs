@@ -1,5 +1,5 @@
 /// Types to parse the command line arguments with the clap crate.
-use crate::{positive_less_than_32, string_no_empty, string_script, Verbosity};
+use crate::{header, positive_less_than_32, string_no_empty, string_script, Verbosity};
 use clap::{Parser, Subcommand, ValueEnum};
 use std::cmp::Ord;
 
@@ -114,7 +114,9 @@ pub enum Commands {
         /// Maximum time in seconds that you allow the whole operation to take.
         #[arg(short, long, value_name = "SECONDS", default_value_t = 300)]
         max_time: u16,
-        // TODO add headers argument, and integration tests
+        /// HTTP header to include in the request
+        #[arg(short = 'H', long = "header", value_name = "HEADER", value_parser = header)]
+        headers: Vec<(String, String)>,
     },
 }
 

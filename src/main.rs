@@ -49,6 +49,7 @@ fn main() {
         output,
         timeout_connect,
         max_time,
+        headers,
     } = args.command
     {
         get_and_save(
@@ -57,6 +58,7 @@ fn main() {
             &output,
             timeout_connect,
             max_time,
+            &headers,
             verbosity.clone(),
         );
         process::exit(0)

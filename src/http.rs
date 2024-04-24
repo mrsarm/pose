@@ -14,6 +14,7 @@ pub fn get_and_save(
     output: &Option<String>,
     timeout_connect_secs: u16,
     max_time: u16,
+    headers: &Vec<(String, String)>,
     verbosity: Verbosity,
 ) {
     let mut url = url.to_string();
@@ -43,7 +44,7 @@ pub fn get_and_save(
         .timeout(Duration::from_secs(max_time.into()))
         .user_agent(format!("pose/{}", crate_version!()).as_str())
         .build();
-    let mut result = _get_and_save(&url, output, path, &agent, verbosity.clone());
+    let mut result = _get_and_save(&url, output, path, &agent, headers, verbosity.clone());
     if !result {
         if let Some(script) = script {
             if !url.contains(&script.0) {
@@ -55,7 +56,7 @@ pub fn get_and_save(
                 process::exit(10);
             }
             url = url.replace(&script.0, &script.1);
-            result = _get_and_save(&url, output, path, &agent, verbosity.clone());
+            result = _get_and_save(&url, output, path, &agent, headers, verbosity.clone());
         }
     }
     if !result {
@@ -69,12 +70,17 @@ fn _get_and_save(
     output: &Option<String>,
     path: &Path,
     agent: &Agent,
+    headers: &Vec<(String, String)>,
     verbosity: Verbosity,
 ) -> bool {
     if !matches!(verbosity, Verbosity::Quiet) {
         eprint!("{}: Downloading {} ... ", "DEBUG".green(), url);
     }
-    match agent.get(url).call() {
+    let mut request = agent.get(url);
+    for header in headers {
+        request = request.set(&header.0, &header.1);
+    }
+    match request.call() {
         Ok(resp) => {
             if !matches!(verbosity, Verbosity::Quiet) {
                 eprintln!("{}", "found".green());

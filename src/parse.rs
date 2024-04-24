@@ -550,3 +550,45 @@ pub fn string_script(s: &str) -> Result<(String, String), &'static str> {
     // should never end here
     Err("wrong expression")
 }
+
+/// Parser of headers in the form of "Name: value".
+/// Return a tuple of 2 strings: ("text1, "text2").
+///
+/// ```
+/// use docker_pose::header;
+///
+/// assert_eq!(header("abc: def"), Ok(("abc".to_string(), "def".to_string())));
+/// assert_eq!(header("a:b"), header("a: b"));
+/// assert_eq!(header("abc:"), Ok(("abc".to_string(), "".to_string())));
+/// assert_eq!(
+///     header("abc: def:more after->:"),
+///     Ok(("abc".to_string(), "def:more after->:".to_string()))
+/// );
+/// assert_eq!(header(""), Err("must be at least 3 characters long"));
+/// assert_eq!(header("a"), Err("must be at least 3 characters long"));
+/// assert_eq!(header("abc"), Err("separator symbol : not found in the header expression"));
+/// assert_eq!(header(":def"), Err("empty header name"));
+pub fn header(s: &str) -> Result<(String, String), &'static str> {
+    if s.len() < 3 {
+        return Err("must be at least 3 characters long");
+    }
+    let mut split = s.splitn(2, ':');
+    let left = split.next();
+    let right = split.next();
+    if let Some(left_text) = left {
+        if left_text == s {
+            return Err("separator symbol : not found in the header expression");
+        }
+        if left_text.is_empty() {
+            return Err("empty header name");
+        }
+        if let Some(right_text) = right {
+            return Ok((
+                left_text.trim_start().to_string(),
+                right_text.trim_start().to_string(),
+            ));
+        }
+    }
+    // should never end here
+    Err("wrong header expression")
+}
