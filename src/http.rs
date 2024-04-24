@@ -104,6 +104,9 @@ fn _get_and_save(
             }
         }
         Err(e) => {
+            if !matches!(verbosity, Verbosity::Quiet) {
+                eprintln!("{}", "failed".red())
+            }
             eprintln!("{}: {}", "ERROR".red(), e);
             process::exit(7);
         }
