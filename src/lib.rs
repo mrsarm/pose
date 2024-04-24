@@ -17,7 +17,7 @@ pub use cmd::{
 };
 pub use docker::DockerCommand;
 pub use git::GitCommand;
-pub use http::{get_and_save, replace_all};
+pub use http::get_and_save;
 pub use parse::{
     get_compose_filename, positive_less_than_32, string_no_empty, string_script, ComposeYaml,
     ReplaceTag,

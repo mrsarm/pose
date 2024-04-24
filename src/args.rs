@@ -103,7 +103,6 @@ pub enum Commands {
         url: String,
         #[arg(value_parser = string_script)]
         script: Option<(String, String)>,
-        // TODO add headers and progress arguments
         /// Save to file (default use the same filename set in the url)
         #[arg(short, long, value_name = "FILE")]
         output: Option<String>,
@@ -115,6 +114,7 @@ pub enum Commands {
         /// Maximum time in seconds that you allow the whole operation to take.
         #[arg(short, long, value_name = "SECONDS", default_value_t = 300)]
         max_time: u16,
+        // TODO add headers argument, and integration tests
     },
 }
 
