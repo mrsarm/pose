@@ -252,7 +252,7 @@ impl ComposeYaml {
             if stderr.to_lowercase().contains("no such image") {
                 if show_progress && replace_tag.offline {
                     eprintln!(
-                        "{}: manifest for image {} ... {} ",
+                        "{}: manifest for image {} ... {}",
                         "DEBUG".green(),
                         remote_image.yellow(),
                         "not found".purple()
@@ -305,7 +305,7 @@ impl ComposeYaml {
             {
                 if show_progress {
                     eprintln!(
-                        "{}: manifest for image {} ... {} ",
+                        "{}: manifest for image {} ... {}",
                         "DEBUG".green(),
                         remote_image.yellow(),
                         "not found".purple()

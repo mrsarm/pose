@@ -6,6 +6,7 @@ use std::time::Duration;
 use std::{io, process};
 use ureq::{Agent, AgentBuilder, Error, Response};
 use url::Url;
+use crate::Verbosity;
 
 pub fn get_and_save(
     url: &str,
@@ -13,6 +14,7 @@ pub fn get_and_save(
     output: &Option<String>,
     timeout_connect_secs: u16,
     max_time: u16,
+    verbosity: Verbosity,
 ) {
     let mut url = url.to_string();
     let parsed_url = match Url::parse(&url) {
@@ -49,12 +51,21 @@ pub fn get_and_save(
         .timeout(Duration::from_secs(max_time.into()))
         .user_agent(format!("pose/{}", crate_version!()).as_str())
         .build();
+    if matches!(verbosity, Verbosity::Verbose) {
+        eprint!("{}: Downloading {} ... ", "DEBUG".green(), url);
+    }
     match agent.get(&url).call() {
         Ok(resp) => {
-            save(resp, path, output);
+            if matches!(verbosity, Verbosity::Verbose) {
+                eprintln!("{}", "found".green());
+            }
+            save(resp, path, output, verbosity.clone());
         }
         Err(Error::Status(code, response)) => {
             if response.status() != 404 {
+                if matches!(verbosity, Verbosity::Verbose) {
+                    eprintln!("{}", "failed".red())
+                }
                 eprintln!(
                     "{}: {} {} {}",
                     "ERROR".red(),
@@ -65,6 +76,9 @@ pub fn get_and_save(
                 eprintln!("{}", response.into_string().unwrap_or("".to_string()));
                 process::exit(1);
             } else {
+                if matches!(verbosity, Verbosity::Verbose) {
+                    eprintln!("{}", "not found".purple());
+                }
                 // TODO use script
             }
         }
@@ -75,14 +89,20 @@ pub fn get_and_save(
     }
 }
 
-fn save(resp: Response, path: &Path, output: &Option<String>) {
+fn save(resp: Response, path: &Path, output: &Option<String>, verbosity: Verbosity) {
     let filename = if let Some(filename) = output {
+        if matches!(verbosity, Verbosity::Verbose) {
+            eprint!("{}: Saving downloaded file as {} ... ", "DEBUG".green(), filename.yellow());
+        }
         filename
     } else {
         path.file_name().unwrap().to_str().unwrap()
     };
     let mut content = resp.into_reader();
     let mut file = File::create(filename).unwrap_or_else(|e| {
+        if matches!(verbosity, Verbosity::Verbose) {
+            eprintln!("{}", "failed".red())
+        }
         eprintln!(
             "{}: creating file '{}' - {}",
             "ERROR".red(),
@@ -92,6 +112,9 @@ fn save(resp: Response, path: &Path, output: &Option<String>) {
         process::exit(5);
     });
     io::copy(&mut content, &mut file).unwrap_or_else(|e| {
+        if matches!(verbosity, Verbosity::Verbose) {
+            eprintln!("{}", "failed".red());
+        }
         eprintln!(
             "{}: writing output to file '{}': {}",
             "ERROR".red(),
@@ -100,6 +123,9 @@ fn save(resp: Response, path: &Path, output: &Option<String>) {
         );
         process::exit(6);
     });
+    if matches!(verbosity, Verbosity::Verbose) {
+        eprintln!("{}", "done".green());
+    }
 }
 
 /// Return a vector with each string equals to the template string, but replacing on each one

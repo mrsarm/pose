@@ -51,7 +51,7 @@ fn main() {
         max_time,
     } = args.command
     {
-        get_and_save(&url, &script, &output, timeout_connect, max_time);
+        get_and_save(&url, &script, &output, timeout_connect, max_time, verbosity.clone());
         process::exit(0)
     }
     if args.filenames.len() > 1 && args.no_docker {
