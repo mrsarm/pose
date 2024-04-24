@@ -46,3 +46,27 @@ setup() {
     # The only one changed:
     assert_output --partial "image: mrsarm/mongotail:3.1.1"
 }
+
+@test "can get a file with another name" {
+    run target/debug/pose get https://raw.githubusercontent.com/mrsarm/pose/main/tests/compose-remote-check.yaml -o ci-check.yaml
+    assert_success
+    assert_output --partial "DEBUG: Downloading https://raw.githubusercontent.com/mrsarm/pose/main/tests/compose-remote-check.yaml ... found"
+    [ -f ci-check.yaml ]
+}
+
+@test "can get a file" {
+    run target/debug/pose get https://raw.githubusercontent.com/mrsarm/pose/main/tests/compose-remote-check.yaml
+    assert_success
+    assert_output --partial "DEBUG: Downloading https://raw.githubusercontent.com/mrsarm/pose/main/tests/compose-remote-check.yaml ... found"
+    [ -f compose-remote-check.yaml ]
+}
+
+@test "can get a file from URL generated from script" {
+    run target/debug/pose get https://raw.githubusercontent.com/mrsarm/pose/never-exist/tests/compose-remote-check.yaml never-exist:main -o get-never.yaml
+    assert_success
+    assert_output --partial "DEBUG: Downloading https://raw.githubusercontent.com/mrsarm/pose/never-exist/tests/compose-remote-check.yaml ... not found"
+    assert_output --partial "DEBUG: Downloading https://raw.githubusercontent.com/mrsarm/pose/main/tests/compose-remote-check.yaml ... found"
+    [ -f get-never.yaml ]
+}
+
+# TODO check better not found cases

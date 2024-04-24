@@ -157,3 +157,28 @@ setup() {
     # because are not used in the example
     assert_output --partial "secrets"
 }
+
+@test "can detect invalid URL" {
+    run target/debug/pose get i-not-a-valid-url
+    assert_failure
+    assert_output --partial "ERROR: invalid URL - relative URL without a base"
+}
+
+@test "can detect invalid script expression" {
+    run target/debug/pose get http://localhost:1234 not-valid-script
+    assert_failure
+    assert_output --partial "invalid value 'not-valid-script' for '[SCRIPT]': separator symbol : not found in the expression"
+}
+
+@test "can handle unknown host" {
+    run target/debug/pose get http://host-unknown-2341.com.uy/file.txt a:b
+    assert_failure
+    assert_output --partial "DEBUG: Downloading http://host-unknown-2341.com.uy/file.txt ... failed"
+    assert_output --partial "ERROR: http://host-unknown-2341.com.uy/file.txt: Dns Failed"
+}
+
+@test "can detect URL without a filename" {
+    run target/debug/pose get http://host.com
+    assert_failure
+    assert_output --partial "ERROR: URL without filename, you have to provide the filename where to store the file with the argument -o, --output"
+}
