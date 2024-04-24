@@ -3,6 +3,12 @@ setup() {
     load 'test_helper/bats-assert/load'
 }
 
+teardown_file() {
+    rm -f get-never.yaml
+    rm -f ci-check.yaml
+    rm -f compose-remote-check.yaml
+}
+
 @test "can list images with remote tag" {
     run target/debug/pose --verbose -f tests/compose-remote-check.yaml \
         list images --tag 3.1.1 --tag-filter "regex=mrsarm/"
@@ -69,4 +75,17 @@ setup() {
     [ -f get-never.yaml ]
 }
 
-# TODO check better not found cases
+@test "can get a file and not found it" {
+    run target/debug/pose get https://raw.githubusercontent.com/mrsarm/pose/never-exist/tests/compose-remote-check.yaml
+    assert_failure
+    assert_output --partial "DEBUG: Downloading https://raw.githubusercontent.com/mrsarm/pose/never-exist/tests/compose-remote-check.yaml ... not found"
+    assert_output --partial "ERROR: Download failed"
+}
+
+@test "can get a file and not found it and not get the scripted version as well" {
+    run target/debug/pose get https://raw.githubusercontent.com/mrsarm/pose/never-exist/tests/compose-remote-check.yaml never-exist:not-exist-as-well
+    assert_failure
+    assert_output --partial "DEBUG: Downloading https://raw.githubusercontent.com/mrsarm/pose/never-exist/tests/compose-remote-check.yaml ... not found"
+    assert_output --partial "DEBUG: Downloading https://raw.githubusercontent.com/mrsarm/pose/not-exist-as-well/tests/compose-remote-check.yaml ... not found"
+    assert_output --partial "ERROR: Download failed"
+}
