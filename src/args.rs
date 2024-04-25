@@ -99,8 +99,15 @@ pub enum Commands {
     /// to another URL generated editing the URL given with a script provided in the
     /// form of "text-to-replace:replacer".
     Get {
+        /// The URL where the file is located
         #[arg(value_parser = string_no_empty)]
         url: String,
+        /// if request to URL responds back with HTTP 404, create a second URL
+        /// replacing any occurrence of the left part of the script with the right
+        /// part. Each part of the script has to be separated with the symbol `:`.
+        /// E.g. `pose get https://server.com/repo/master/compose.yml master:feature-a`
+        /// will try first download the resource from https://server.com/repo/master/compose.yml,
+        /// if not found, will try at https://server.com/repo/feature-a/compose.yml
         #[arg(value_parser = string_script)]
         script: Option<(String, String)>,
         /// Save to file (default use the same filename set in the url)
