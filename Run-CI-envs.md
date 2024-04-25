@@ -15,6 +15,10 @@ to finally merge them all or keep making changes without affect the `latest`
 version (or whatever you call it) until all `new-tracking-field` images from the
 different affected apps are ready to move into stage / prod.
 
+Bellow you will find a Compose file example and examples of how to execute pose,
+and at the end of the guide there is an example of how to write a GitHub Action
+workflow with Docker Compose and pose to run E2E tests and release your images.
+
 ## Introduction
 
 Dockerized apps are published in the Docker registry in a similar way they are stored in
@@ -279,7 +283,7 @@ unlikely and even undesired to have an official Postgres image `postgres:client-
 but more importantly, the execution in our CI pipeline will be much faster.
 
 ```
-pose config -t "$GITHUB_REF_NAME" --tag-filter regex='mrsarm/' -o ci.yaml --progress
+pose config -t "$(pose slug $GITHUB_REF_NAME)" --tag-filter regex='mrsarm/' -o ci.yaml --progress
 
 DEBUG: manifest for image postgres ... skipped 
 DEBUG: manifest for image rabbitmq ... skipped
@@ -297,4 +301,151 @@ on it will be ignored when replacing tags:
 
 ```shell
 pose config -t "$GITHUB_REF_NAME" --tag-filter regex!='postgres|rabbitmq' -o ci.yaml --progress
+```
+
+#### Slugify branch name
+
+Git branches can have names like "feature-brand-color" that are compatible with image tag names
+in Docker, but can also have names like "feature/brand-color" which is not, because
+the symbol "/" is not allowed in tag names. You can get a "slug" version when
+tagging an image:
+
+```shell
+user@linuxl:webapp [feature/brand-color] $ pose slug
+feature-brand-color
+```
+
+Normally you will use it in a script, and in a CI environment, you may have the repo
+cloned but without the `.git` and the git command available, but the name of the branch
+in an environment variable already set, e.g. in GitHub the env `$GITHUB_REF_NAME` has
+the name of the branch, so e.g. to set the tag in an image you are building in CI:
+
+```shell
+docker build -t "webapp:$(./pose slug $GITHUB_REF_NAME)" .
+```
+
+#### Download file from branch URL for CI builds
+
+You may prefer to have your Docker Compose definition, and maybe some other resources
+like .env files in one repo, so each of your apps can be E2E tested but with the
+same `compose.yaml` file across all your repos. Actually having a repo with all the
+E2E tests and the `compose.yaml` file is the recommended approach, but in order
+to run the E2E tests in all the repos you need not only the Docker images published
+in a registry, but at least the `compose.yaml` to run them, so `pose get` helps with
+that, using a similar approach to `pose config`: it tries to download a given
+file from one URL (branch), if not found, tries with the "default" configured.
+
+Here is an example for GitHub, you have all your e2e tests in the repo "acme/e2e",
+the default branch is `master`, and at the root of the repo is the `compose.yaml`
+file, so the file can be downloaded at
+https://raw.githubusercontent.com/acme/e2e/master/compose.yaml , but at some point
+when working in a branch `ux-fix` in the repo `acme/webapp`, you may want to introduce
+changes in the e2e tests as well, including perhaps in the compose file, so you
+want to run the e2e tests with all the images with the tag `ux-fix` if available,
+and you want to run them all using the `compose.yaml` file at the e2e repo from a branch
+with the same name if available, otherwise use the "master" version. So here is the
+script that allows to specify the URL where to get the file, otherwise a "script"
+to modify the URL with the default branch:
+
+
+```yaml
+- name: Get compose.yaml
+  env:
+    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  run: |
+    ./pose get -H "Authorization: token $GITHUB_TOKEN" \
+         "https://raw.githubusercontent.com/acme/e2e/$GITHUB_REF_NAME/compose.yaml" "$GITHUB_REF_NAME:main"
+```
+
+### GitHub Action example
+
+Here is a full example of a GitHub Action workflow that uses pose to run
+the tests from the `compose.yaml` example from above. The configuration
+is as follows:
+
+- The workflow works in the fictional repo `mrsarm/web`. The file is stored
+  in the filepath `.github/workflows/e2e.yml`.
+- There is a service `web-ci-tests` where E2E tests run, these tests could
+  be in the same repo as the webapp or not, in the example above it was
+  in the same repo, but here we assume it's in another repo `mrsarm/e2e`.
+  The `compose.yaml` with all the settings is stored at the root of `mrsarm/e2e`.
+
+
+```yaml
+name: Build & E2E
+
+on: [push]
+
+jobs:
+
+  build-test-release:
+    name: Build, Test and Release
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ vars.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Download pose
+      run: wget https://github.com/mrsarm/pose/releases/download/0.4.0-b5/pose-0.4.0-b5-x86_64-unknown-linux-gnu.tar.gz
+    - name: Unpack pose
+      run: tar -xvf pose*.tar.gz
+
+    - name: Define $TAG variable
+      run: echo "TAG=$(./pose slug $GITHUB_REF_NAME)" >> "$GITHUB_ENV"
+    - name: Print tag and image names
+      run: echo -e "- TAG    -->  $TAG\n- IMAGE  -->  mrsarm/web:$TAG"
+
+    - name: Build the Docker image
+      run: docker build -t mrsarm/web:${TAG} .
+
+    #
+    # At this point you may want to run unit tests of mrsarm/web
+    # before releasing and running the e2e tests ...
+    #
+    # -name: Run unit tests
+    #  run: ...
+
+    - name: Release Docker image
+      # Release before running the e2e tests is up to you, here it's
+      # released first in case you still want the image available in the
+      # registry even if the e2e tests fail.
+      if: ${{ github.ref != 'refs/heads/master' }}
+      run: docker push "mrsarm/web:$TAG"
+
+    - name: Get compose.yaml
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        ./pose get -H "Authorization: token $GITHUB_TOKEN" \
+             "https://raw.githubusercontent.com/mrsarm/e2e/$TAG/compose.yaml" "$TAG:main"
+
+    - name: Build compose file for CI with pose
+      if: ${{ github.ref != 'refs/heads/master' }}
+      run: |
+        ./pose --no-docker config -t $TAG --tag-filter regex=mrsarm/ --progress -o ci.yaml
+
+    - name: Create compose file for CI without pose
+      if: ${{ github.ref == 'refs/heads/master' }}
+      run: cp compose.yaml ci.yaml
+
+    - name: Pull images
+      run: docker compose -f ci.yaml pull
+           && docker compose -f ci.yaml pull web-ci-tests   # services with profiles are not pulled by default
+
+    - name: Run e2e tests
+      run: docker compose -f ci.yaml run web-ci-tests
+
+    - name: Tag "latest"
+      if: ${{ github.ref == 'refs/heads/master' }}
+      run: docker tag "mrsarm/web:$TAG" mrsarm/web:latest
+    - name: Release "latest"
+      if: ${{ github.ref == 'refs/heads/master' }}
+      run: docker push mrsarm/web:latest
 ```
