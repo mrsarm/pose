@@ -263,7 +263,8 @@ Normally you will build images locally on each local repo and you may want to ru
 the tests in the same way CI does. If you also followed the convention of naming your
 releases with the same name as the branch, you can use `pose slug` that outputs the
 current name of the branch but post-processed to avoid issues with not allowed
-chars like "/" that is turned into "-".
+chars like "/" that is turned into "-" (pose slugify any argument passed to
+`-t`, `--tag` anyway, unless `--no-slug` is passed as well).
 
 ```shell
 pose config -t "$(pose slug)" --tag-filter regex='mrsarm/' -o ci.yaml
@@ -332,25 +333,25 @@ user@linuxl:webapp [feature/brand-color] $ pose slug
 feature-brand-color
 ```
 
-Normally you will use it in a script, and in a CI environment, where normally there is
-a checkout of the code, without the `.git` folder and the git command available, but the
-name of the branch in an environment variable already set, e.g. in GitHub the env
-`$GITHUB_REF_NAME` has the name of the branch, so e.g. to set the tag in an image you are
-building in CI:
+Normally you will use pose in a script, and in CI environments, where normally there is
+a checkout of the _HEAD_ of the branch but without the `.git` folder and the git
+command available, the name of the branch is available in an environment variable, e.g.
+in GitHub the env `$GITHUB_REF_NAME` has the name of the branch, so to set the tag
+for an image you are building in CI you can use:
 
 ```shell
-docker build -t "webapp:$(./pose slug $GITHUB_REF_NAME)" .
+docker build -t "myapp:$(./pose slug $GITHUB_REF_NAME)" .
 ```
 
-If you are going to use the tag name in many places, better to set it in a new env variable,
-in GitHub Actions you do so with:
+If you are going to use the tag name in many places, better to set it in a new env
+variable, in GitHub Actions you do so with:
 
 ```yaml
     - name: Define $TAG variable
       run: echo "TAG=$(./pose slug $GITHUB_REF_NAME)" >> "$GITHUB_ENV"
 ```
 
-#### Download file from branch URL for CI builds
+#### Download file from a branch URL for CI builds
 
 You may prefer to have your Docker Compose definition, and maybe some other resources
 like .env files in one repo, so each of your apps can be E2E tested but with the
@@ -359,19 +360,20 @@ E2E tests and the `compose.yaml` file is the recommended approach, but in order
 to run the E2E tests in all the repos you need not only the Docker images published
 in a registry, but at least the `compose.yaml` to run them, so `pose get` helps with
 that, using a similar approach to `pose config`: it tries to download a given
-file from one URL (branch), if not found, tries with a "fallback" URL.
+file from one URL (branch URL), if not found, tries with a "fallback" URL (usually
+the "master" branch).
 
-Here is an example for GitHub, you have all your e2e tests in the repo "mrsarm/e2e",
+Here is an example for GitHub, you have all your e2e tests in the repo `mrsarm/e2e`,
 the default branch is `master`, and at the root of the repo is the `compose.yaml`
 file, so the file can be downloaded at
 https://raw.githubusercontent.com/mrsarm/e2e/master/compose.yaml , but at some point
 when working in a branch `ux-fix` in the repo `mrsarm/web`, you may want to introduce
-changes in the e2e tests as well, including perhaps in the compose file, so you
+changes in the e2e tests as well, including perhaps the compose file, so you
 want to run the e2e tests with all the images with the tag `ux-fix` if available,
 and you want to run them all using the `compose.yaml` file at the e2e repo from a branch
-with the same name if available, otherwise use the "master" version. So here is the
-script that allows to specify the URL where to get the file, otherwise a "script"
-to modify the URL with the default branch:
+with the same name if available as well, otherwise use the "master" version.
+So here is the script that allows to specify the URL where to get the file, otherwise
+a "script" in the form of _to_replace:replacer_ to modify the URL with the default branch:
 
 ```yaml
 - name: Get compose.yaml
@@ -382,8 +384,31 @@ to modify the URL with the default branch:
        "https://raw.githubusercontent.com/mrsarm/e2e/$TAG/compose.yaml" "$TAG:main"
 ```
 
-In the example, `$TAG` has the name of the branch the CI is running against (check the
-section above). 
+`$TAG` has the name of the branch CI is running against (`ux-fix` from the example), if
+https://raw.githubusercontent.com/mrsarm/e2e/ux-fix/compose.yaml returns
+HTTP 404 (Not Found), following the expression `"$TAG:main"` (`ux-fix:main"`) pose will try to get the
+file from https://raw.githubusercontent.com/mrsarm/e2e/master/compose.yaml (the "master" version).
+
+### `--no-docker` argument
+
+The command `pose config` call to `docker config --no-interpolate --no-normalize` first
+to pre-process the compose file, which is specially useful if you want to merge multiple
+compose files (you can pass more than one compose file with the argument `-f`, `--file`),
+but in old versions of `docker compose` the `config` command outputs the new compose file
+removing first all the objects, including services that should not be executed or used
+when running `docker compose up`, so any service with a `profile:` set is going to be
+removed in the output (this doesn't happen with newer versions of compose). So if you
+don't need to pass more than one compose file to pose, or you have an old version of
+Compose, use the flag `--no-docker` so Pose skip the prep-processing of your compose
+file with `docker compose config`.
+
+```shell
+pose --no-docker config [...]
+```
+
+This is the case for GitHub Action at the day of writing this section, and can be
+the case for CI environments that don't ship the `docker` or the `docker compose` command
+in the pod running the jobs as well.
 
 ### GitHub Action example
 
@@ -449,7 +474,7 @@ jobs:
       run: docker push "mrsarm/web:$TAG"
 
     - name: Get compose.yaml
-      # Remember the compose file is stored at the mrsarm/e2e repo, not this one,
+      # Remember the compose file is stored at the mrsarm/e2e repo,
       # so it can be shared across all apps. CI has to fetch it first from
       # the right repo and branch, or use the default branch "master" if the feature
       # branch $TAG doesn't exist in mrsarm/e2e.
