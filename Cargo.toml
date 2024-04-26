@@ -1,6 +1,6 @@
 [package]
 name = "docker-pose"
-version = "0.4.0-b4"
+version = "0.4.0-b5"
 edition = "2021"
 authors = ["Mariano Ruiz <mrsarm@gmail.com>"]
 description = "Command line tool to play with 🐳 Docker Compose files."
@@ -11,13 +11,15 @@ repository = "https://github.com/mrsarm/pose"
 categories = ["docker", "command-line-interface"]
 
 [dependencies]
-clap = { version = "4.5", features = ["derive"] }
+clap = { version = "4.5", features = ["derive", "cargo"] }
 clap-num = "1.1"
 colored = "2.1"
 lazy_static = "1.4"
 serde_yaml = "0.9"
 strum_macros = "0.26"
 regex = "1.10"
+ureq = "2.9"
+url = "2.5"
 
 [dev-dependencies]
 pretty_assertions = "1.4.0"
@@ -25,7 +27,8 @@ serial_test = "3.0"
 
 [profile.release]
 # This is going to be the default soon if not provided
-strip = "debuginfo"
+opt-level = "s"
+strip = "symbols"
 
 [[bin]]
 name = "pose"

@@ -7,15 +7,16 @@ use std::{fs, process};
 //mod lib;
 //use crate::lib::ComposeYaml;
 use docker_pose::{
-    cmd_get_success_output_or_fail, get_service, get_slug, get_yml_content, print_names,
-    unwrap_filter_regex, unwrap_filter_tag, Args, Commands, ComposeYaml, DockerCommand, GitCommand,
-    Objects, ReplaceTag, Verbosity,
+    cmd_get_success_output_or_fail, get_and_save, get_service, get_slug, get_yml_content,
+    print_names, unwrap_filter_regex, unwrap_filter_tag, Args, Commands, ComposeYaml,
+    DockerCommand, GitCommand, Objects, ReplaceTag, Verbosity,
 };
 
 fn main() {
     setup_terminal();
     let args = Args::parse();
     let verbosity = args.get_verbosity();
+    // TODO check here Commands::Get to avoid compose parsing
     if let Commands::Slug { text } = args.command {
         if let Some(t) = text {
             println!("{}", get_slug(&t));
@@ -41,6 +42,25 @@ fn main() {
                 }
             }
         }
+        process::exit(0)
+    } else if let Commands::Get {
+        url,
+        script,
+        output,
+        timeout_connect,
+        max_time,
+        headers,
+    } = args.command
+    {
+        get_and_save(
+            &url,
+            &script,
+            &output,
+            timeout_connect,
+            max_time,
+            &headers,
+            verbosity.clone(),
+        );
         process::exit(0)
     }
     if args.filenames.len() > 1 && args.no_docker {
@@ -216,7 +236,7 @@ fn main() {
                 println!("{}", result);
             }
         }
-        Commands::Slug { .. } => {
+        Commands::Slug { .. } | Commands::Get { .. } => {
             // This was attended above in the code
         }
     }

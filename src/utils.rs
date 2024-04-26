@@ -29,6 +29,28 @@ pub fn unwrap_filter_tag(filter: Option<&str>) -> Option<&str> {
 /// When expression has "=" the bool is true, when is "!="
 /// the bool is false.
 /// If the option passed is None, this method returns None as well.
+///
+/// ```
+/// use regex::Regex;
+/// use docker_pose::unwrap_filter_regex;
+///
+/// assert!(unwrap_filter_regex(None).is_none());
+///
+/// let expected_regex = Regex::new("mrsarm/").unwrap();
+/// let filter = unwrap_filter_regex(Some("regex=mrsarm/"));
+///
+/// assert!(filter.is_some());
+/// let filter = filter.unwrap();
+/// assert_eq!(filter.0.as_str(), expected_regex.as_str());
+/// assert_eq!(filter.1, true);
+///
+/// let filter = unwrap_filter_regex(Some("regex!=mrsarm/"));
+///
+/// assert!(filter.is_some());
+/// let filter = filter.unwrap();
+/// assert_eq!(filter.0.as_str(), expected_regex.as_str());
+/// assert_eq!(filter.1, false);
+/// ```
 pub fn unwrap_filter_regex(filter: Option<&str>) -> Option<(Regex, bool)> {
     filter.as_ref().map(|f| {
         if let Some(val) = f.strip_prefix("regex=") {
@@ -100,6 +122,13 @@ pub fn get_yml_content(filename: Option<&str>, verbosity: Verbosity) -> String {
 /// a tag name to be published in a docker registry, with
 /// only number, letters, the symbol "-" or the symbol ".",
 /// and no more than 63 characters long, all in lowercase.
+///
+/// ```
+/// use docker_pose::get_slug;
+///
+/// assert_eq!(get_slug("some/branch"), "some-branch".to_string());
+/// assert_eq!(get_slug("Yeap!spaces and UpperCase  "), "yeap-spaces-and-uppercase".to_string());
+/// ```
 pub fn get_slug(input: &str) -> String {
     let text = input.trim();
     let text = text.to_lowercase();
