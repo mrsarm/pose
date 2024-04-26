@@ -11,9 +11,9 @@ another, replacing tag versions from the images with a new remote
 version (if exists), making it possible to develop a feature across
 dockerized apps, tagged with a common name, e.g. `new-tracking-field`,
 then test them all together in a CI environment with docker compose,
-to finally merge them all or keep making changes without affect the `latest`
-version (or whatever you call it) until all `new-tracking-field` images from the
-different affected apps are ready to move into stage / prod.
+to finally allow you to merge them all, or keep making changes without affect
+the `latest`version (or whatever you call it) until all `new-tracking-field`
+images from the different affected apps are ready to move into stage / prod.
 
 Bellow you will find a Compose file example and examples of how to execute pose,
 and at the end of the guide there is an example of how to write a GitHub Action
@@ -62,14 +62,13 @@ at once, and a task that runs an integration test.
 
 Normally an integration test can be a script that interacts with your app through a
 browser in an automated way, testing some conditions are met when the webapp is loaded,
-and can also perform some actions, other integration test can be shell scripts, written
+and can also perform some actions, other integration tests can be shell scripts, written
 in a scripting language like Python that make calls to your API, then check the result
 and continues making more calls based on the results.
 
 In the example above the integration tests could be written with Playwright (or Selenium)
-to test the webapp in a headless browser (service `web-ci-tests`), so
-they were written and stored in the same image used to store the webapp (image
-`mrsarm/web`), but executed with a different command (`yarn test:ci`).
+to test the webapp in a headless browser (service `e2e`), so they were written
+and stored in the image `mrsarm/e2e`.
 
 **compose.yaml** file:
 
@@ -81,8 +80,8 @@ services:
       - "8080:8080"
     depends_on: [api]
   # CI test task
-  web-ci-tests:
-    image: mrsarm/web
+  e2e:
+    image: mrsarm/e2e
     command: ["yarn", "test:ci"]
     depends_on: [web]
     profiles: [ci]   # because it has a profile, it doesn't run by default
@@ -112,16 +111,16 @@ This is the list of services and images get by `pose`:
 
 ```shell
 $ pose list -p oneline services
-api api-worker postgres rabbitmq web web-ci-tests
+api api-worker postgres rabbitmq web e2e
 $ pose list -p oneline images
-mrsarm/api mrsarm/api-worker mrsarm/web postgres:15 rabbitmq:3
+mrsarm/api mrsarm/api-worker mrsarm/web mrsarm/e2e postgres:15 rabbitmq:3
 ```
 
-There are 3 images, all starting with the prefix "mrsarm/" that are used for our services
-_api_, _api-worker_ and _web_ (and the CI task _web-ci-tests_), while the other images
+There are 4 images starting with the prefix "mrsarm/" that are used for our services
+_api_, _api-worker_ and _web_ (and the CI task _e2e_), while the other images
 _postgres:15_ and _rabbitmq:3_ are DB services used by our services.
 
-We can run all services and then the CI tests with `docker compose run web-ci-tests`,
+We can run all services and then the CI tests with `docker compose run e2e`,
 so in what way is useful `pose` other than just allow us to list services or images?
 well, now imagine that you are developing a new feature in the API to add a new field,
 and that feature will be used by the webapp and the worker as well, but you need to
@@ -185,11 +184,12 @@ pose config --tag "$GITHUB_REF_NAME" --progress -o ci.yaml
 The remote progress will look like the following:
 
 ```
-DEBUG: manifest for image mrsarm/web:client-vat-field ... found 
-DEBUG: manifest for image mrsarm/api-worker:client-vat-field ... not found 
-DEBUG: manifest for image postgres:client-vat-field ... not found 
-DEBUG: manifest for image mrsarm/api:client-vat-field ... found 
-DEBUG: manifest for image rabbitmq:client-vat-field ... not found 
+DEBUG: manifest for image mrsarm/web:client-vat-field ... found
+DEBUG: manifest for image mrsarm/e2e:client-vat-field ... not found
+DEBUG: manifest for image mrsarm/api-worker:client-vat-field ... not found
+DEBUG: manifest for image postgres:client-vat-field ... not found
+DEBUG: manifest for image mrsarm/api:client-vat-field ... found
+DEBUG: manifest for image rabbitmq:client-vat-field ... not found
 ```
 
 In the progress shown we can see the images found with the tag `client-vat-field`
@@ -203,10 +203,11 @@ services:
     ports:
       - "8080:8080"
     depends_on: [api]
-  web-ci-tests:
-    image: mrsarm/web:client-vat-field
+  e2e:
+    image: mrsarm/e2e
     command: ["yarn", "test:ci"]
     depends_on: [web]
+    profiles: ["e2e"]
   api:
     image: mrsarm/api:client-vat-field
     ports:
@@ -232,7 +233,7 @@ services:
 Then the services and the tests can be executed with:
 
 ```shell
-docker compose -f ci.yaml run web-ci-tests
+docker compose -f ci.yaml run e2e
 ```
 
 Note the `-f ci.yaml` argument used to ask compose to use the new compose file
@@ -246,7 +247,7 @@ are two special arguments that can help the process to speed up the execution.
 #### Threads
 
 The process of checking all the images your compose file has can
-be slow, specially in big app composed of dozens of apps.
+be slow, specially in a big app composed of dozens of apps.
 The argument `--threads NUM` allows to specify the max number of parallel
 threads to be used when fetching the images info from the remote registry. 
 The default is 8 threads, and can be increased up to 32, but be carefully with
@@ -275,7 +276,7 @@ from the docker registry) is `--tag-filter FILTER`, filtering _in_ or _out_
 what images to check whether a remote tag exists or not when replacing images.
 `FILTER` can be an expression like `regex=NAME` (`=` → _filter ‒ in_) or `regex!=EXPR`
 (`!=` → _filter ‒ out_), where `EXPR` is a regex expression. In our example, all the apps we
-build start with the `mrsarm/` prefix, while other services like the DBs one don't,
+build start with the `mrsarm/` prefix, while other services like the DB ones don't,
 so the best way to check only our apps while ignoring the rest when replacing the tag in
 the image field of each service is using the argument `--tag-filter regex='mrsarm/'`.
 The resulting `ci.yaml` will be identical than not using the filter at all, because it's
@@ -287,9 +288,10 @@ pose config -t "$(pose slug $GITHUB_REF_NAME)" --tag-filter regex='mrsarm/' -o c
 
 DEBUG: manifest for image postgres ... skipped 
 DEBUG: manifest for image rabbitmq ... skipped
-DEBUG: manifest for image mrsarm/web:client-vat-field ... found 
-DEBUG: manifest for image mrsarm/api-worker:client-vat-field ... not found 
-DEBUG: manifest for image mrsarm/api:client-vat-field ... found 
+DEBUG: manifest for image mrsarm/web:client-vat-field ... found
+DEBUG: manifest for image mrsarm/api-worker:client-vat-field ... not found
+DEBUG: manifest for image mrsarm/api:client-vat-field ... found
+DEBUG: manifest for image mrsarm/e2e:client-vat-field ... not found
 ```
 
 Use a _filter ‒ out_ expression when not all images follow certain convention like
@@ -303,11 +305,26 @@ on it will be ignored when replacing tags:
 pose config -t "$GITHUB_REF_NAME" --tag-filter regex!='postgres|rabbitmq' -o ci.yaml --progress
 ```
 
+#### Installing pose in a CI environment
+
+Pose can be installed just downloading the right binary from GitHub, and unpacking it. Here
+is the example for GitHub Actions:
+
+```yaml
+    - name: Download pose
+      run: wget https://github.com/mrsarm/pose/releases/download/0.4.0-b5/pose-0.4.0-b5-x86_64-unknown-linux-gnu.tar.gz
+    - name: Unpack pose
+      run: tar -xvf pose*.tar.gz
+```
+
+Pose is available in the same folder your code is available, so you have to call it
+with `./pose`.
+
 #### Slugify branch name
 
-Git branches can have names like "feature-brand-color" that are compatible with image tag names
-in Docker, but can also have names like "feature/brand-color" which is not, because
-the symbol "/" is not allowed in tag names. You can get a "slug" version when
+Git branches can have names like "feature-brand-color" that are compatible with image
+tag names in Docker, but can also have names like "feature/brand-color" which is not,
+because the symbol "/" is not allowed in tag names. You can get a "slug" version when
 tagging an image:
 
 ```shell
@@ -315,13 +332,22 @@ user@linuxl:webapp [feature/brand-color] $ pose slug
 feature-brand-color
 ```
 
-Normally you will use it in a script, and in a CI environment, you may have the repo
-cloned but without the `.git` and the git command available, but the name of the branch
-in an environment variable already set, e.g. in GitHub the env `$GITHUB_REF_NAME` has
-the name of the branch, so e.g. to set the tag in an image you are building in CI:
+Normally you will use it in a script, and in a CI environment, where normally there is
+a checkout of the code, without the `.git` folder and the git command available, but the
+name of the branch in an environment variable already set, e.g. in GitHub the env
+`$GITHUB_REF_NAME` has the name of the branch, so e.g. to set the tag in an image you are
+building in CI:
 
 ```shell
 docker build -t "webapp:$(./pose slug $GITHUB_REF_NAME)" .
+```
+
+If you are going to use the tag name in many places, better to set it in a new env variable,
+in GitHub Actions you do so with:
+
+```yaml
+    - name: Define $TAG variable
+      run: echo "TAG=$(./pose slug $GITHUB_REF_NAME)" >> "$GITHUB_ENV"
 ```
 
 #### Download file from branch URL for CI builds
@@ -333,13 +359,13 @@ E2E tests and the `compose.yaml` file is the recommended approach, but in order
 to run the E2E tests in all the repos you need not only the Docker images published
 in a registry, but at least the `compose.yaml` to run them, so `pose get` helps with
 that, using a similar approach to `pose config`: it tries to download a given
-file from one URL (branch), if not found, tries with the "default" configured.
+file from one URL (branch), if not found, tries with a "fallback" URL.
 
-Here is an example for GitHub, you have all your e2e tests in the repo "acme/e2e",
+Here is an example for GitHub, you have all your e2e tests in the repo "mrsarm/e2e",
 the default branch is `master`, and at the root of the repo is the `compose.yaml`
 file, so the file can be downloaded at
-https://raw.githubusercontent.com/acme/e2e/master/compose.yaml , but at some point
-when working in a branch `ux-fix` in the repo `acme/webapp`, you may want to introduce
+https://raw.githubusercontent.com/mrsarm/e2e/master/compose.yaml , but at some point
+when working in a branch `ux-fix` in the repo `mrsarm/web`, you may want to introduce
 changes in the e2e tests as well, including perhaps in the compose file, so you
 want to run the e2e tests with all the images with the tag `ux-fix` if available,
 and you want to run them all using the `compose.yaml` file at the e2e repo from a branch
@@ -347,15 +373,17 @@ with the same name if available, otherwise use the "master" version. So here is 
 script that allows to specify the URL where to get the file, otherwise a "script"
 to modify the URL with the default branch:
 
-
 ```yaml
 - name: Get compose.yaml
   env:
     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   run: |
     ./pose get -H "Authorization: token $GITHUB_TOKEN" \
-         "https://raw.githubusercontent.com/acme/e2e/$GITHUB_REF_NAME/compose.yaml" "$GITHUB_REF_NAME:main"
+       "https://raw.githubusercontent.com/mrsarm/e2e/$TAG/compose.yaml" "$TAG:main"
 ```
+
+In the example, `$TAG` has the name of the branch the CI is running against (check the
+section above). 
 
 ### GitHub Action example
 
@@ -364,11 +392,12 @@ the tests from the `compose.yaml` example from above. The configuration
 is as follows:
 
 - The workflow works in the fictional repo `mrsarm/web`. The file is stored
-  in the filepath `.github/workflows/e2e.yml`.
-- There is a service `web-ci-tests` where E2E tests run, these tests could
-  be in the same repo as the webapp or not, in the example above it was
-  in the same repo, but here we assume it's in another repo `mrsarm/e2e`.
-  The `compose.yaml` with all the settings is stored at the root of `mrsarm/e2e`.
+  in the filepath `.github/workflows/e2e.yml`. A similar workflow could be
+  configured on each of the apps, just changing the image is built, but running
+  the same E2E tests.
+- There is a service `e2e` where E2E tests run, the name of the image
+  and the repo where the code is stored is `mrsarm/e2e`. The `compose.yaml`
+  with all the settings is also stored at the root of `mrsarm/e2e`.
 
 
 ```yaml
@@ -406,20 +435,24 @@ jobs:
       run: docker build -t mrsarm/web:${TAG} .
 
     #
-    # At this point you may want to run unit tests of mrsarm/web
+    # At this point you may want to run unit tests from mrsarm/web
     # before releasing and running the e2e tests ...
     #
     # -name: Run unit tests
-    #  run: ...
+    #  run: docker run ... "mrsarm/web:$TAG" ...
 
     - name: Release Docker image
       # Release before running the e2e tests is up to you, here it's
       # released first in case you still want the image available in the
-      # registry even if the e2e tests fail.
+      # registry, even if the e2e tests fail.
       if: ${{ github.ref != 'refs/heads/master' }}
       run: docker push "mrsarm/web:$TAG"
 
     - name: Get compose.yaml
+      # Remember the compose file is stored at the mrsarm/e2e repo, not this one,
+      # so it can be shared across all apps. CI has to fetch it first from
+      # the right repo and branch, or use the default branch "master" if the feature
+      # branch $TAG doesn't exist in mrsarm/e2e.
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
@@ -437,11 +470,13 @@ jobs:
 
     - name: Pull images
       run: docker compose -f ci.yaml pull
-           && docker compose -f ci.yaml pull web-ci-tests   # services with profiles are not pulled by default
+           && docker compose -f ci.yaml pull e2e   # services with profiles are not pulled by default
 
     - name: Run e2e tests
-      run: docker compose -f ci.yaml run web-ci-tests
+      run: docker compose -f ci.yaml run e2e
 
+    # Tagging and releasing "latest" only happens when CI is running against the master
+    # branch, and all tests executed before succeeded
     - name: Tag "latest"
       if: ${{ github.ref == 'refs/heads/master' }}
       run: docker tag "mrsarm/web:$TAG" mrsarm/web:latest
