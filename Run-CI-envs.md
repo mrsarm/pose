@@ -12,14 +12,14 @@ version (if exists), making it possible to develop a feature across
 dockerized apps, tagged with a common name, e.g. `new-tracking-field`,
 then test them all together in a CI environment with docker compose,
 to finally allow you to merge them all, or keep making changes without affect
-the `latest`version (or whatever you call it) until all `new-tracking-field`
+the `latest` version (or whatever you call it) until all `new-tracking-field`
 images from the different affected apps are ready to move into stage / prod.
 
 Bellow you will find a Compose file example and examples of how to execute pose,
 and at the end of the guide there is an example of how to write a GitHub Action
 workflow with Docker Compose and pose to run E2E tests and release your images.
 
-## Introduction
+## Distributed Apps
 
 Dockerized apps are published in the Docker registry in a similar way they are stored in
 a VCS repository (git), with big SHA numbers pointing to different version of the
@@ -312,13 +312,13 @@ Pose can be installed just downloading the right binary from GitHub, and unpacki
 is the example for GitHub Actions:
 
 ```yaml
-    - name: Download pose
-      run: wget https://github.com/mrsarm/pose/releases/download/0.4.0-b5/pose-0.4.0-b5-x86_64-unknown-linux-gnu.tar.gz
-    - name: Unpack pose
-      run: tar -xvf pose*.tar.gz
+    - name: Install pose
+      run: |
+          wget https://github.com/mrsarm/pose/releases/download/0.4.0-b5/pose-0.4.0-b5-x86_64-unknown-linux-gnu.tar.gz -O - \
+          | tar -xz
 ```
 
-Pose is available in the same folder your code is available, so you have to call it
+The command is available in the same folder your code is available, so you have to call it
 with `./pose`.
 
 #### Slugify branch name
@@ -389,7 +389,7 @@ https://raw.githubusercontent.com/mrsarm/e2e/ux-fix/compose.yaml returns
 HTTP 404 (Not Found), following the expression `"$TAG:main"` (`ux-fix:main"`) pose will try to get the
 file from https://raw.githubusercontent.com/mrsarm/e2e/master/compose.yaml (the "master" version).
 
-### `--no-docker` argument
+#### `--no-docker` argument
 
 The command `pose config` call to `docker config --no-interpolate --no-normalize` first
 to pre-process the compose file, which is specially useful if you want to merge multiple
@@ -446,10 +446,10 @@ jobs:
         username: ${{ vars.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-    - name: Download pose
-      run: wget https://github.com/mrsarm/pose/releases/download/0.4.0-b5/pose-0.4.0-b5-x86_64-unknown-linux-gnu.tar.gz
-    - name: Unpack pose
-      run: tar -xvf pose*.tar.gz
+    - name: Install pose
+      run: |
+          wget https://github.com/mrsarm/pose/releases/download/0.4.0-b5/pose-0.4.0-b5-x86_64-unknown-linux-gnu.tar.gz -O - \
+          | tar -xz
 
     - name: Define $TAG variable
       run: echo "TAG=$(./pose slug $GITHUB_REF_NAME)" >> "$GITHUB_ENV"
