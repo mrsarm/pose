@@ -438,7 +438,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
 
     - name: Login to Docker Hub
       uses: docker/login-action@v3
@@ -470,7 +470,6 @@ jobs:
       # Release before running the e2e tests is up to you, here it's
       # released first in case you still want the image available in the
       # registry, even if the e2e tests fail.
-      if: ${{ github.ref != 'refs/heads/master' }}
       run: docker push "mrsarm/web:$TAG"
 
     - name: Get compose.yaml
@@ -484,14 +483,9 @@ jobs:
         ./pose get -H "Authorization: token $GITHUB_TOKEN" \
              "https://raw.githubusercontent.com/mrsarm/e2e/$TAG/compose.yaml" "$TAG:main"
 
-    - name: Build compose file for CI with pose
-      if: ${{ github.ref != 'refs/heads/master' }}
+    - name: Build compose file for CI
       run: |
         ./pose --no-docker config -t $TAG --tag-filter regex=mrsarm/ --progress -o ci.yaml
-
-    - name: Create compose file for CI without pose
-      if: ${{ github.ref == 'refs/heads/master' }}
-      run: cp compose.yaml ci.yaml
 
     - name: Pull images
       run: docker compose -f ci.yaml pull
