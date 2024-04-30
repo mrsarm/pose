@@ -314,7 +314,7 @@ is the example for GitHub Actions:
 ```yaml
     - name: Install pose
       run: |
-          wget https://github.com/mrsarm/pose/releases/download/0.4.0-b5/pose-0.4.0-b5-x86_64-unknown-linux-gnu.tar.gz -O - \
+          wget https://github.com/mrsarm/pose/releases/download/0.4.0/pose-0.4.0-x86_64-unknown-linux-gnu.tar.gz -O - \
           | tar -xz
 ```
 
@@ -448,7 +448,7 @@ jobs:
 
     - name: Install pose
       run: |
-          wget https://github.com/mrsarm/pose/releases/download/0.4.0-b5/pose-0.4.0-b5-x86_64-unknown-linux-gnu.tar.gz -O - \
+          wget https://github.com/mrsarm/pose/releases/download/0.4.0/pose-0.4.0-x86_64-unknown-linux-gnu.tar.gz -O - \
           | tar -xz
 
     - name: Define $TAG variable
