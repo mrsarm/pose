@@ -33,11 +33,11 @@ Here are some rules that are pretty normal among tech organizations to manage
 git repos and docker images across their apps:
 
 - **Git repositories**:
-    - `main` branch (or `master`) is the development branch in git, and contains what
-      normally is on the stage environment running.
+    - Main branch (normally `master` or `main`) is the development branch in git, and
+      contains what normally is on the stage environment running.
     - `prod` branch is the production branch in git, what normally is live in production.
     - `**?` other branches are considered "feature" branches, or branches to make fixes,
-      they are created from the `main` branch, and eventually merged into `main`.
+      they are created from the main branch, and eventually merged into.
 - **Docker registry**:
     - `latest` tag is the development tag, so whatever is pushed to `master` in git, is
       built in the CI environment into a docker image, and stored in the registry
@@ -48,17 +48,17 @@ git repos and docker images across their apps:
       the production environment is done manually.
     - `**?` other tags are "feature" tags made from its corresponding branches, they
       are not deployed automatically in any environment, but can be manually deployed
-      into stage for testing before the feature branch is merged into `main`, or
+      into stage for testing before the feature branch is merged into main branch, or
       can be used with docker / docker compose to run them in a developer's computer
       or the CI environment for integration tests.
-      **Here is when pose comes to help 💪** as we'll see below.
+      **Here is where pose comes to help 💪** as we'll see below.
 
 ### Guided example without pose and the limitations
 
 Now let's see an example where you have an application that is actually a distributed
 app composed of many services (microservices, web server, workers, DBs...).
 In the following example you have a compose file that allows to run all the services
-at once, and a task that runs an integration test.
+at once, and a task that runs an integration test suite.
 
 Normally an integration test can be a script that interacts with your app through a
 browser in an automated way, testing some conditions are met when the webapp is loaded,
@@ -259,7 +259,7 @@ related with rate limits reached.
 With the flag `--offline` pose will check whether the tag passed exists or not
 only in your local registry, useful for local testing.
 
-Normally you will build images locally on each local repo and you may want to run
+Normally you will build images locally on each local repo, and you may want to run
 the tests in the same way CI does. If you also followed the convention of naming your
 releases with the same name as the branch, you can use `pose slug` that outputs the
 current name of the branch but post-processed to avoid issues with not allowed
@@ -295,8 +295,8 @@ DEBUG: manifest for image mrsarm/api:client-vat-field ... found
 DEBUG: manifest for image mrsarm/e2e:client-vat-field ... not found
 ```
 
-Use a _filter ‒ out_ expression when not all images follow certain convention like
-in our example where all company's image start with the `mrsarm/` prefix, but at least
+It's recommended to use a _filter ‒ out_ expression when not all images follow certain convention
+like in our example where all company's image start with the `mrsarm/` prefix, but at least
 you know what are the images you don't want to be checked, so a regex expression using
 `regex!=` could be as follows to achieve the same result: `postgres|rabbitmq`. Because
 it's an _exclusion_ expression, all images with the string `postgres` or `rabbitmq`
@@ -325,8 +325,8 @@ with `./pose`.
 
 Git branches can have names like "feature-brand-color" that are compatible with image
 tag names in Docker, but can also have names like "feature/brand-color" which is not,
-because the symbol "/" is not allowed in tag names. You can get a "slug" version when
-tagging an image:
+because the symbol "/" is not allowed in Docker tag names. You can get a "slug" version
+when tagging an image:
 
 ```shell
 user@linuxl:webapp [feature/brand-color] $ pose slug
@@ -336,7 +336,7 @@ feature-brand-color
 Normally you will use pose in a script, and in CI environments, where normally there is
 a checkout of the _HEAD_ of the branch but without the `.git` folder and the git
 command available, the name of the branch is available in an environment variable, e.g.
-in GitHub the env `$GITHUB_REF_NAME` has the name of the branch, so to set the tag
+in GitHub the env variable `$GITHUB_REF_NAME` has the name of the branch, so to set the tag
 for an image you are building in CI you can use:
 
 ```shell
@@ -350,6 +350,9 @@ variable, in GitHub Actions you do so with:
     - name: Define $TAG variable
       run: echo "TAG=$(./pose slug $GITHUB_REF_NAME)" >> "$GITHUB_ENV"
 ```
+
+In the example above, the "slug" version of the branch name was set in
+the `$TAG` environment variable.
 
 #### Download file from a branch URL for CI builds
 
@@ -381,12 +384,12 @@ a "script" in the form of _to_replace:replacer_ to modify the URL with the defau
     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   run: |
     ./pose get -H "Authorization: token $GITHUB_TOKEN" \
-       "https://raw.githubusercontent.com/mrsarm/e2e/$TAG/compose.yaml" "$TAG:main"
+       "https://raw.githubusercontent.com/mrsarm/e2e/$TAG/compose.yaml" "$TAG:master"
 ```
 
 `$TAG` has the name of the branch CI is running against (`ux-fix` from the example), if
 https://raw.githubusercontent.com/mrsarm/e2e/ux-fix/compose.yaml returns
-HTTP 404 (Not Found), following the expression `"$TAG:main"` (`ux-fix:main"`) pose will try to get the
+HTTP 404 (Not Found), following the expression `"$TAG:master"` (`ux-fix:master"`) pose will try to get the
 file from https://raw.githubusercontent.com/mrsarm/e2e/master/compose.yaml (the "master" version).
 
 #### `--no-docker` argument
@@ -418,8 +421,8 @@ is as follows:
 
 - The workflow works in the fictional repo `mrsarm/web`. The file is stored
   in the filepath `.github/workflows/e2e.yml`. A similar workflow could be
-  configured on each of the apps, just changing the image is built, but running
-  the same E2E tests.
+  configured on each of the apps listed in the compose file, just changing the
+  image is built, but running the same E2E tests.
 - There is a service `e2e` where E2E tests run, the name of the image
   and the repo where the code is stored is `mrsarm/e2e`. The `compose.yaml`
   with all the settings is also stored at the root of `mrsarm/e2e`.
@@ -452,9 +455,14 @@ jobs:
           | tar -xz
 
     - name: Define $TAG variable
+      # pose takes care of cleaning up the $GITHUB_REF_NAME value before assign it
+      # to the $TAG env, e.g. "feature/track-id" --> "feature-track-id", making
+      # it suitable for docker tag names
       run: echo "TAG=$(./pose slug $GITHUB_REF_NAME)" >> "$GITHUB_ENV"
     - name: Print tag and image names
-      run: echo -e "- TAG    -->  $TAG\n- IMAGE  -->  mrsarm/web:$TAG"
+      run: |
+          echo "- TAG    -->  $TAG"
+          echo "- IMAGE  -->  mrsarm/web:$TAG"
 
     - name: Build the Docker image
       run: docker build -t mrsarm/web:${TAG} .
@@ -481,7 +489,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         ./pose get -H "Authorization: token $GITHUB_TOKEN" \
-             "https://raw.githubusercontent.com/mrsarm/e2e/$TAG/compose.yaml" "$TAG:main"
+             "https://raw.githubusercontent.com/mrsarm/e2e/$TAG/compose.yaml" "$TAG:master"
 
     - name: Build compose file for CI
       run: |
@@ -494,8 +502,8 @@ jobs:
     - name: Run e2e tests
       run: docker compose -f ci.yaml run e2e
 
-    # Tagging and releasing "latest" only happens when CI is running against the master
-    # branch, and all tests executed before succeeded
+    # Tagging and releasing "latest" only happens when CI is running against
+    # the master branch, and all tests succeeded
     - name: Tag "latest"
       if: ${{ github.ref == 'refs/heads/master' }}
       run: docker tag "mrsarm/web:$TAG" mrsarm/web:latest

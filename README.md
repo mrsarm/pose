@@ -63,14 +63,15 @@ sales-service postgres redis nginx ...
 
 The `-p oneline` (or `--pretty online`) prints the list in one line, separating each
 item with a white space, why is it useful? you can then paste the output attached to
-a local IP in your `/etc/hosts`. Following the example:
+a local IP in your `/etc/hosts`. E.g.:
 
 ```
 127.0.0.1   sales-service postgres redis nginx ...
 ```
 
-This is useful when trying to access to services ran with Docker Compose, and
-then you need to access them from the browser, or from an app outside Docker.
+This is useful when trying to access services running with Docker Compose from outside
+the containers, e.g. you need to access a webapp from the browser, or make some queries
+to the DB with a desktop client app.
 
 #### List environment variables from a service
 
