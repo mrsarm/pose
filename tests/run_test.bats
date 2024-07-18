@@ -15,7 +15,7 @@ setup() {
     assert_output --partial 'Command line tool to play with 🐳 Docker Compose files.'
     assert_output --partial 'list    List objects found in the compose file'
     # ...
-    assert_output --partial '-f, --file <FILENAMES>'
+    assert_output --partial '-f, --file <FILENAME>'
 }
 
 @test "can list services" {
