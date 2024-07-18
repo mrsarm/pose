@@ -9,7 +9,7 @@ pub struct Args {
     #[command(subcommand)]
     pub command: Commands,
 
-    #[arg(short, long = "file")]
+    #[arg(short, long = "file", value_name = "FILENAME")]
     pub filenames: Vec<String>,
 
     /// Increase verbosity
@@ -56,7 +56,7 @@ pub enum Commands {
         /// Save to file (default to stdout)
         #[arg(short, long, value_name = "FILE")]
         output: Option<String>,
-        /// output image attributes in services with tag passed instead of the one set in the file
+        /// output image attributes in services with a tag passed instead of the one set in the file
         /// if they exist locally or in the remote docker registry
         #[arg(short, long, value_name = "TAG", value_parser = string_no_empty)]
         tag: Option<String>,
@@ -105,9 +105,9 @@ pub enum Commands {
         /// if request to URL responds back with HTTP 404, create a second URL
         /// replacing any occurrence of the left part of the script with the right
         /// part. Each part of the script has to be separated with the symbol `:`.
-        /// E.g. `pose get https://server.com/repo/master/compose.yml master:feature-a`
-        /// will try first download the resource from https://server.com/repo/master/compose.yml,
-        /// if not found, will try at https://server.com/repo/feature-a/compose.yml
+        /// E.g. `pose get https://server.com/repo/feature-a/compose.yml feature-a:master`
+        /// will try first download the resource from https://server.com/repo/feature-a/compose.yml,
+        /// if not found, will try at https://server.com/repo/master/compose.yml
         #[arg(value_parser = string_script)]
         script: Option<(String, String)>,
         /// Save to file (default use the same filename set in the url)
