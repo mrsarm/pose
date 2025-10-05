@@ -176,6 +176,6 @@ Execute first `git submodule update --init` to clone the submodules within the `
 
 **Source**: https://github.com/mrsarm/pose
 
-**Authors**: (2022-2024) Mariano Ruiz <mrsarm (at) gmail.com>
+**Authors**: (2022-2025) Mariano Ruiz <mrsarm (at) gmail.com>
 
 **License**: GPL-3

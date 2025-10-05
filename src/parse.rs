@@ -8,14 +8,12 @@ use std::cmp::{max, min};
 use std::collections::BTreeMap;
 use std::path::Path;
 use std::sync::mpsc::{Receiver, Sender};
-use std::sync::{mpsc, Arc, Mutex};
+use std::sync::{mpsc, Arc, LazyLock, Mutex};
 use std::{process, thread};
 
-lazy_static! {
-    static ref EMPTY_MAP: Mapping = Mapping::default();
-    static ref ENV_NAME_REGEX: Regex = Regex::new(r"^\w+$").unwrap();
-    static ref QUOTED_NUM_REGEX: Regex = Regex::new(r"^'[0-9]+'$").unwrap();
-}
+static EMPTY_MAP: LazyLock<Mapping> = LazyLock::new(Mapping::default);
+static ENV_NAME_REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^\w+$").unwrap());
+static QUOTED_NUM_REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^'[0-9]+'$").unwrap());
 
 pub struct ComposeYaml {
     map: BTreeMap<String, Value>,

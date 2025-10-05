@@ -12,12 +12,11 @@ categories = ["docker", "command-line-interface"]
 
 [dependencies]
 clap = { version = "4.5", features = ["derive", "cargo"] }
-clap-num = "1.1"
-colored = "2.1"
-lazy_static = "1.4"
+clap-num = "1.2"
+colored = "3.0"
 serde_yaml = "0.9"
-strum_macros = "0.26"
-regex = "1.10"
+strum_macros = "0.27"
+regex = "1.11"
 ureq = "2.9"
 url = "2.5"
 
