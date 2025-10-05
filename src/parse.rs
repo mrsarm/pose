@@ -372,6 +372,19 @@ impl ComposeYaml {
         service.map(|v| v.as_mapping()).unwrap_or_default()
     }
 
+    pub fn filter_services(&self, service_names: &Vec<String>) -> Vec<(String, &Mapping)> {
+        let services = self.get_services();
+        let services = services.unwrap_or_else(|| &*EMPTY_MAP);
+        let mut list: Vec<(String, &Mapping)> = Vec::new();
+        for name in service_names {
+            let service = services.get(name);
+            if let Some(s) = service.and_then(|s| s.as_mapping()) {
+                list.push((name.to_string(), s));
+            }
+        }
+        list
+    }
+
     pub fn get_service_envs(&self, service: &Mapping) -> Option<Vec<String>> {
         let envs = service.get("environment")?;
         match envs.as_sequence() {

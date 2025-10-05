@@ -7,9 +7,9 @@ use std::{fs, process};
 //mod lib;
 //use crate::lib::ComposeYaml;
 use docker_pose::{
-    cmd_get_success_output_or_fail, get_and_save, get_service, get_slug, get_yml_content,
-    print_names, unwrap_filter_regex, unwrap_filter_tag, Args, Commands, ComposeYaml,
-    DockerCommand, GitCommand, Objects, ReplaceTag, Verbosity,
+    cmd_get_success_output_or_fail, get_and_save, get_service, get_services, get_slug,
+    get_yml_content, print_names, unwrap_filter_regex, unwrap_filter_tag, Args, Commands,
+    ComposeYaml, DockerCommand, GitCommand, Objects, ReplaceTag, Verbosity,
 };
 
 fn main() {
@@ -125,12 +125,21 @@ fn main() {
                     envs.iter().for_each(|env| println!("{}", env));
                 }
             }
-            Objects::Depends { service } => {
-                let serv = get_service(&compose, &service);
-                let deps_op = compose.get_service_depends_on(serv);
-                if let Some(envs) = deps_op {
-                    envs.iter().for_each(|env| println!("{}", env));
+            Objects::Depends { services } => {
+                let services_list = get_services(&compose, &services);
+                let mut all_deps_op: Vec<String> = vec![];
+                for (_, serv) in services_list {
+                    let deps_op = compose.get_service_depends_on(serv);
+                    if let Some(deps) = deps_op {
+                        deps.iter()
+                            .for_each(|dep| all_deps_op.push(dep.to_string()));
+                    }
                 }
+                all_deps_op.sort();
+                all_deps_op.dedup();
+                let names = all_deps_op.iter().map(|i| i.as_str()).collect::<Vec<_>>();
+                print_names(names.into_iter(), pretty);
+                // TODO recursive dependencies
             }
             Objects::Profiles => {
                 let op = compose.get_profiles_names();

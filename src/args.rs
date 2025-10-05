@@ -166,7 +166,7 @@ pub enum Objects {
         threads: u8,
     },
     /// List service's depends_on
-    Depends { service: String },
+    Depends { services: Vec<String> },
     /// List volumes
     Volumes,
     /// List networks

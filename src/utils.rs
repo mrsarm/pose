@@ -104,6 +104,28 @@ pub fn get_service<'a>(compose: &'a ComposeYaml, service_name: &str) -> &'a Mapp
     }
 }
 
+pub fn get_services<'a>(
+    compose: &'a ComposeYaml,
+    service_names: &Vec<String>,
+) -> Vec<(String, &'a Mapping)> {
+    let services = compose.filter_services(service_names);
+    if services.len() < service_names.len() {
+        let not_found = service_names
+            .iter()
+            .filter(|s| !services.iter().any(|(name, _)| *s == name))
+            .map(|s| s.as_str())
+            .collect::<Vec<_>>()
+            .join(" ");
+        eprintln!(
+            "{}: No such service/s found: {}",
+            "ERROR".red(),
+            not_found.yellow()
+        );
+        process::exit(16);
+    }
+    services
+}
+
 pub fn get_yml_content(filename: Option<&str>, verbosity: Verbosity) -> String {
     let filename = get_compose_filename(filename, verbosity).unwrap_or_else(|err| {
         eprintln!("{}: {}", "ERROR".red(), err);
