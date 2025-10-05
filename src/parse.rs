@@ -148,9 +148,11 @@ impl ComposeYaml {
                 let thread_tx = tx.clone();
                 let child = thread::spawn(move || {
                     loop {
-                        let mut v = input.lock().unwrap();
-                        let last = v.pop(); // take one element out from the vec and free
-                        drop(v); // the vector lock so other threads can get it
+                        let last: Option<String>;
+                        {
+                            let mut v = input.lock().unwrap();
+                            last = v.pop(); // take one element out from the vec and free
+                        } // the vector lock so other threads can get it (drop of v happens here)
                         if let Some(image) = last {
                             let image_parts = image.split(':').collect::<Vec<_>>();
                             let image_name = *image_parts.first().unwrap();
