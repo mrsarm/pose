@@ -1,11 +1,13 @@
 use crate::Verbosity;
 use clap::crate_version;
 use colored::Colorize;
+use http::{Response, StatusCode};
 use std::fs::File;
 use std::path::Path;
 use std::time::Duration;
 use std::{io, process};
-use ureq::{Agent, AgentBuilder, Error, Response};
+use ureq::config::Config;
+use ureq::{Agent, Body};
 use url::Url;
 
 pub fn get_and_save(
@@ -38,25 +40,37 @@ pub fn get_and_save(
     } else {
         parsed_url.path()
     };
+    if let Some(script) = script {
+        if !url.contains(&script.0) {
+            eprintln!(
+                "{}: the left part of the script '{}' is not part of the URL",
+                "ERROR".red(),
+                script.0.yellow()
+            );
+            process::exit(10);
+        }
+    }
     let path = Path::new(path);
-    let agent: Agent = AgentBuilder::new()
-        .timeout_connect(Duration::from_secs(timeout_connect_secs.into()))
-        .timeout(Duration::from_secs(max_time.into()))
+    let config: Config = Agent::config_builder()
+        .timeout_connect(Option::from(Duration::from_secs(
+            timeout_connect_secs.into(),
+        )))
+        .timeout_global(Option::from(Duration::from_secs(max_time.into())))
         .user_agent(format!("pose/{}", crate_version!()).as_str())
+        .http_status_as_error(false)
         .build();
-    let mut result = _get_and_save(&url, output, path, &agent, headers, verbosity.clone());
+    let mut result = _get_and_save(
+        &url,
+        output,
+        path,
+        config.clone(),
+        headers,
+        verbosity.clone(),
+    );
     if !result {
         if let Some(script) = script {
-            if !url.contains(&script.0) {
-                eprintln!(
-                    "{}: the left part of the script '{}' is not part of the URL",
-                    "ERROR".red(),
-                    script.0.yellow()
-                );
-                process::exit(10);
-            }
             url = url.replace(&script.0, &script.1);
-            result = _get_and_save(&url, output, path, &agent, headers, verbosity.clone());
+            result = _get_and_save(&url, output, path, config, headers, verbosity.clone());
         }
     }
     if !result {
@@ -69,44 +83,48 @@ fn _get_and_save(
     url: &str,
     output: &Option<String>,
     path: &Path,
-    agent: &Agent,
+    config: Config,
     headers: &Vec<(String, String)>,
     verbosity: Verbosity,
 ) -> bool {
     if !matches!(verbosity, Verbosity::Quiet) {
         eprint!("{}: Downloading {} ... ", "DEBUG".green(), url);
     }
+    let agent: Agent = config.into();
     let mut request = agent.get(url);
     for header in headers {
-        request = request.set(&header.0, &header.1);
+        request = request.header(&header.0, &header.1);
     }
     match request.call() {
-        Ok(resp) => {
-            if !matches!(verbosity, Verbosity::Quiet) {
-                eprintln!("{}", "found".green());
-            }
-            save(resp, path, output, verbosity.clone());
-            true
-        }
-        Err(Error::Status(code, response)) => {
-            if response.status() != 404 {
+        Ok(mut resp) => {
+            if resp.status().is_success() {
                 if !matches!(verbosity, Verbosity::Quiet) {
-                    eprintln!("{}", "failed".red())
+                    eprintln!("{}", "found".green());
                 }
-                eprintln!(
-                    "{}: {} {} {}",
-                    "ERROR".red(),
-                    response.http_version(),
-                    code,
-                    response.status_text()
-                );
-                eprintln!("{}", response.into_string().unwrap_or("".to_string()));
-                process::exit(5);
-            } else {
+                save(resp, path, output, verbosity.clone());
+                true
+            } else if resp.status() == StatusCode::NOT_FOUND {
                 if !matches!(verbosity, Verbosity::Quiet) {
                     eprintln!("{}", "not found".purple());
                 }
                 false
+            } else {
+                if !matches!(verbosity, Verbosity::Quiet) {
+                    eprintln!("{}", "failed".red())
+                }
+                eprintln!(
+                    "{}: {:?} {} {}",
+                    "ERROR".red(),
+                    resp.version(),
+                    resp.status().as_u16(),
+                    resp.status().canonical_reason().unwrap_or("")
+                );
+                let error_msg = resp.body_mut().read_to_string().unwrap_or_else(|e| {
+                    eprintln!("{}: reading download content - {}", "ERROR".red(), e);
+                    process::exit(5);
+                });
+                eprintln!("{}", error_msg);
+                process::exit(5);
             }
         }
         Err(e) => {
@@ -119,7 +137,7 @@ fn _get_and_save(
     }
 }
 
-fn save(resp: Response, path: &Path, output: &Option<String>, verbosity: Verbosity) {
+fn save(resp: Response<Body>, path: &Path, output: &Option<String>, verbosity: Verbosity) {
     let filename = if let Some(filename) = output {
         if !matches!(verbosity, Verbosity::Quiet) {
             eprint!(
@@ -132,7 +150,7 @@ fn save(resp: Response, path: &Path, output: &Option<String>, verbosity: Verbosi
     } else {
         path.file_name().unwrap().to_str().unwrap()
     };
-    let mut content = resp.into_reader();
+    let mut content = resp.into_body().into_reader();
     let mut file = File::create(filename).unwrap_or_else(|e| {
         if !matches!(verbosity, Verbosity::Quiet) {
             eprintln!("{}", "failed".red())

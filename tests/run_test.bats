@@ -137,7 +137,7 @@ setup() {
     assert_output --partial "could not find expected ':'"
 }
 
-@test "can output config using docker" {
+@test "config: can output config using docker" {
     run target/debug/pose -f tests/compose.yaml config
     assert_success
     assert_output --partial "app1"
@@ -146,7 +146,7 @@ setup() {
     refute_output --partial "nginx"
 }
 
-@test "can output config without docker" {
+@test "config: can output config without docker" {
     run target/debug/pose --no-docker -f tests/compose.yaml config
     assert_success
     assert_output --partial "app1"
@@ -158,26 +158,32 @@ setup() {
     assert_output --partial "secrets"
 }
 
-@test "can detect invalid URL" {
+@test "get: can detect invalid URL" {
     run target/debug/pose get i-not-a-valid-url
     assert_failure
     assert_output --partial "ERROR: invalid URL - relative URL without a base"
 }
 
-@test "can detect invalid script expression" {
-    run target/debug/pose get http://localhost:1234 not-valid-script
+@test "get: can detect invalid script expression" {
+    run target/debug/pose get http://localhost:1234/config.yaml not-valid-script
     assert_failure
     assert_output --partial "invalid value 'not-valid-script' for '[SCRIPT]': separator symbol : not found in the expression"
 }
 
-@test "can handle unknown host" {
-    run target/debug/pose get http://host-unknown-2341.com.uy/file.txt a:b
+@test "get: can detect invalid script expression in the left part" {
+    run target/debug/pose get http://localhost:1234/config.yaml LocalHost:127.0.0.1
     assert_failure
-    assert_output --partial "DEBUG: Downloading http://host-unknown-2341.com.uy/file.txt ... failed"
-    assert_output --partial "ERROR: http://host-unknown-2341.com.uy/file.txt: Dns Failed"
+    assert_output --partial "the left part of the script 'LocalHost' is not part of the URL"
 }
 
-@test "can detect URL without a filename" {
+@test "get: can handle unknown host" {
+    run target/debug/pose get http://host-unknown-2341.com.uy/file.txt file:file-2
+    assert_failure
+    assert_output --partial "DEBUG: Downloading http://host-unknown-2341.com.uy/file.txt ... failed"
+    assert_output --partial "ERROR: io: failed to lookup address information: Name or service not known"
+}
+
+@test "get: can detect URL without a filename" {
     run target/debug/pose get http://host.com
     assert_failure
     assert_output --partial "ERROR: URL without filename, you have to provide the filename where to store the file with the argument -o, --output"

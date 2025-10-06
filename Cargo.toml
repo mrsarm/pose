@@ -17,8 +17,9 @@ colored = "3.0"
 serde_yaml = "0.9"
 strum_macros = "0.27"
 regex = "1.11"
-ureq = "2.9"
+ureq = { version = "3.1", features = ["rustls", "platform-verifier", "gzip", "brotli", "charset"] }
 url = "2.5"
+http = "1.3"
 
 [dev-dependencies]
 pretty_assertions = "1.4.0"
