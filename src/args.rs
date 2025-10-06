@@ -165,7 +165,7 @@ pub enum Objects {
         #[arg(long, value_name = "NUM", default_value_t = 8, value_parser = positive_less_than_32, requires("tag"))]
         threads: u8,
     },
-    /// List service's depends_on
+    /// List service's depends_on services
     Depends { services: Vec<String> },
     /// List volumes
     Volumes,

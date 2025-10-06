@@ -132,14 +132,16 @@ fn main() {
                     let deps_op = compose.get_service_depends_on(serv);
                     if let Some(deps) = deps_op {
                         deps.iter()
-                            .for_each(|dep| all_deps_op.push(dep.to_string()));
+                            .for_each(|dep| {
+                                if !all_deps_op.contains(dep) && !services.contains(dep) {
+                                all_deps_op.push(dep.to_string())
+                                }
+                            });
                     }
                 }
                 all_deps_op.sort();
-                all_deps_op.dedup();
                 let names = all_deps_op.iter().map(|i| i.as_str()).collect::<Vec<_>>();
                 print_names(names.into_iter(), pretty);
-                // TODO recursive dependencies
             }
             Objects::Profiles => {
                 let op = compose.get_profiles_names();
