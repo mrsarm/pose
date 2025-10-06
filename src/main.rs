@@ -131,12 +131,11 @@ fn main() {
                 for (_, serv) in services_list {
                     let deps_op = compose.get_service_depends_on(serv);
                     if let Some(deps) = deps_op {
-                        deps.iter()
-                            .for_each(|dep| {
-                                if !all_deps_op.contains(dep) && !services.contains(dep) {
+                        deps.iter().for_each(|dep| {
+                            if !all_deps_op.contains(dep) && !services.contains(dep) {
                                 all_deps_op.push(dep.to_string())
-                                }
-                            });
+                            }
+                        });
                     }
                 }
                 all_deps_op.sort();
