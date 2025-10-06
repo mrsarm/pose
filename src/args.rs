@@ -168,7 +168,7 @@ pub enum Objects {
     /// List service's depends_on services
     Depends {
         #[arg(required = true)]
-        services: Vec<String>
+        services: Vec<String>,
     },
     /// List volumes
     Volumes,
