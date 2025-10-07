@@ -1,5 +1,6 @@
 mod args;
 mod cmd;
+mod completion;
 mod docker;
 mod git;
 mod http;
@@ -12,6 +13,7 @@ pub use cmd::{
     cmd_call, cmd_call_to_string, cmd_exit_code, cmd_get_success_output_or_fail, cmd_write_stderr,
     cmd_write_stdout,
 };
+pub use completion::POSE_COMPLETE;
 pub use docker::DockerCommand;
 pub use git::GitCommand;
 pub use http::get_and_save;

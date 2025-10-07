@@ -99,7 +99,7 @@ of any service:
 $ pose list envs portal-webapp > .env
 ```
 
-## Install
+## Build and Install
 
 Like any Rust project, install the binary `pose` in your system with:
 
@@ -113,7 +113,7 @@ Or from the source, after cloning the source code, go to the folder and
 execute ` cargo install --path .` or `make install` (normally it will
 install the binary in the `~/.cargo/bin` folder).
 
-### Binary Download
+### Binary Install
 
 Binaries are made available each release for Linux, Mac and Windows.
 
@@ -140,6 +140,18 @@ $ ./pose
 Include the directory Pose is in, in your [PATH Variable](https://www.baeldung.com/linux/path-variable)
 if you wish to be able to execute it anywhere, or move Pose to a directory already
 included in your `$PATH` variable, like `$HOME/.local/bin`.
+
+## Enable tab completion
+
+Running the following command the tab autocompletion is enabled in the current
+terminal session:
+
+```bash
+$ eval "$(_POSE_ARGCOMPLETE=source pose)"
+```
+
+You can add the script to your `~/.bashrc` script, or whatever script your shell
+environment run when a new session starts.
 
 ### Build and run tests
 

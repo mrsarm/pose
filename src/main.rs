@@ -2,6 +2,7 @@
 
 use clap::Parser;
 use colored::*;
+use std::env;
 use std::{fs, process};
 
 //mod lib;
@@ -9,12 +10,20 @@ use std::{fs, process};
 use docker_pose::{
     cmd_get_success_output_or_fail, get_and_save, get_service, get_services, get_slug,
     get_yml_content, print_names, unwrap_filter_regex, unwrap_filter_tag, Args, Commands,
-    ComposeYaml, DockerCommand, GitCommand, Objects, ReplaceTag, Verbosity,
+    ComposeYaml, DockerCommand, GitCommand, Objects, ReplaceTag, Verbosity, POSE_COMPLETE,
 };
 
 fn main() {
     setup_terminal();
-    let args = Args::parse();
+    let args = Args::try_parse().unwrap_or_else(|e| {
+        let pose_complete = env::var("_POSE_ARGCOMPLETE").unwrap_or("".to_string());
+        if pose_complete == "source" {
+            // output bash tab autocompletion script
+            println!("{}", POSE_COMPLETE);
+            process::exit(1);
+        }
+        e.exit();
+    });
     let verbosity = args.get_verbosity();
     // TODO check here Commands::Get to avoid compose parsing
     if let Commands::Slug { text } = args.command {
