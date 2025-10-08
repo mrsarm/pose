@@ -3,6 +3,7 @@ use colored::Colorize;
 use regex::Regex;
 use serde_yaml::Mapping;
 use std::cmp::min;
+use std::ops::Add;
 use std::vec::IntoIter;
 use std::{fs, process};
 
@@ -89,7 +90,13 @@ fn invalid_regex_exit(e: regex::Error, val: &str) -> ! {
 pub fn print_names(iter: IntoIter<&str>, pretty: Formats) {
     match pretty {
         Formats::Full => iter.for_each(|service| println!("{}", service)),
-        Formats::Oneline => println!("{}", iter.collect::<Vec<&str>>().join(" ")),
+        Formats::Oneline => println!(
+            "{}",
+            iter.fold(String::with_capacity(1024), |a, b| {
+                let s = if !a.is_empty() { a.add(" ") } else { a };
+                s.add(b)
+            }),
+        ),
     }
 }
 
