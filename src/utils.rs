@@ -4,7 +4,6 @@ use regex::Regex;
 use serde_yaml::Mapping;
 use std::cmp::min;
 use std::ops::Add;
-use std::vec::IntoIter;
 use std::{fs, process};
 
 /// Get the tag value (or None), or exit if the filter
@@ -87,7 +86,7 @@ fn invalid_regex_exit(e: regex::Error, val: &str) -> ! {
     process::exit(2);
 }
 
-pub fn print_names(iter: IntoIter<&str>, pretty: Formats) {
+pub fn print_names<'a>(iter: impl Iterator<Item = &'a str>, pretty: Formats) {
     match pretty {
         Formats::Full => iter.for_each(|service| println!("{}", service)),
         Formats::Oneline => println!(

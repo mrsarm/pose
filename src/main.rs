@@ -148,8 +148,8 @@ fn main() {
                     }
                 }
                 all_deps_op.sort();
-                let names = all_deps_op.iter().map(|i| i.as_str()).collect::<Vec<_>>();
-                print_names(names.into_iter(), pretty);
+                let names = all_deps_op.iter().map(|s| s.as_str());
+                print_names(names, pretty);
             }
             Objects::Profiles => {
                 let op = compose.get_profiles_names();
@@ -195,7 +195,7 @@ fn main() {
                         process::exit(15);
                     }
                     Some(images) => {
-                        let images_list = images.iter().map(|i| i.as_str()).collect::<Vec<_>>();
+                        let images_list = images.iter().map(|i| i.as_str());
                         print_names(images_list.into_iter(), pretty);
                     }
                 }
