@@ -286,7 +286,7 @@ unlikely and even undesired to have an official Postgres image `postgres:client-
 but more importantly, the execution in our CI pipeline will be much faster.
 
 ```
-pose config -t "$(pose slug $GITHUB_REF_NAME)" --tag-filter regex='mrsarm/' -o ci.yaml --progress
+pose config -t "$GITHUB_REF_NAME" --tag-filter regex='mrsarm/' -o ci.yaml --progress
 
 DEBUG: manifest for image postgres ... skipped 
 DEBUG: manifest for image rabbitmq ... skipped
