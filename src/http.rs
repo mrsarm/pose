@@ -16,7 +16,7 @@ pub fn get_and_save(
     output: &Option<String>,
     timeout_connect_secs: u16,
     max_time: u16,
-    headers: &Vec<(String, String)>,
+    headers: &[(String, String)],
     verbosity: Verbosity,
 ) {
     let mut url = url.to_string();
@@ -84,7 +84,7 @@ fn _get_and_save(
     output: &Option<String>,
     path: &Path,
     config: Config,
-    headers: &Vec<(String, String)>,
+    headers: &[(String, String)],
     verbosity: Verbosity,
 ) -> bool {
     if !matches!(verbosity, Verbosity::Quiet) {

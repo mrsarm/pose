@@ -112,7 +112,7 @@ pub fn get_service<'a>(compose: &'a ComposeYaml, service_name: &str) -> &'a Mapp
 
 pub fn get_services<'a>(
     compose: &'a ComposeYaml,
-    service_names: &Vec<String>,
+    service_names: &[String],
 ) -> Vec<(String, &'a Mapping)> {
     let services = compose.filter_services(service_names);
     if services.len() < service_names.len() {
