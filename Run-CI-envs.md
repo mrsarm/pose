@@ -275,11 +275,12 @@ pose config -t "$(pose slug)" --tag-filter regex='mrsarm/' -o ci.yaml
 The other argument that allows to speed up the process (and avoid rate limits
 from the docker registry) is `--tag-filter FILTER`, filtering _in_ or _out_
 what images to check whether a remote tag exists or not when replacing images.
-`FILTER` can be an expression like `regex=NAME` (`=` → _filter ‒ in_) or `regex!=EXPR`
-(`!=` → _filter ‒ out_), where `EXPR` is a regex expression. In our example, all the apps we
-build start with the `mrsarm/` prefix, while other services like the DB ones don't,
-so the best way to check only our apps while ignoring the rest when replacing the tag in
-the image field of each service is using the argument `--tag-filter regex='mrsarm/'`.
+`FILTER` can be an expression like `regex=NAME` (`=` → _filter‒in_) or `regex!=EXPR`
+(`!=` → _filter‒out_, or also called invert match), where `EXPR` is a regex expression.
+In our example, all the apps we build start with the `mrsarm/` prefix, while other
+services like the DB ones don't, so the best way to check only our apps while ignoring the
+rest when replacing the tag in the image field of each service is using the
+argument `--tag-filter regex='mrsarm/'`.
 The resulting `ci.yaml` will be identical than not using the filter at all, because it's
 unlikely and even undesired to have an official Postgres image `postgres:client-vat-field`,
 but more importantly, the execution in our CI pipeline will be much faster.
@@ -295,7 +296,7 @@ DEBUG: manifest for image mrsarm/api:client-vat-field ... found
 DEBUG: manifest for image mrsarm/e2e:client-vat-field ... not found
 ```
 
-It's recommended to use a _filter ‒ out_ expression when not all images follow certain convention
+It's recommended to use a _filter‒out_ expression when not all images follow certain convention
 like in our example where all company's image start with the `mrsarm/` prefix, but at least
 you know what are the images you don't want to be checked, so a regex expression using
 `regex!=` could be as follows to achieve the same result: `postgres|rabbitmq`. Because
