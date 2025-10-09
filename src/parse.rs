@@ -470,11 +470,7 @@ pub fn get_compose_filename(
             if Path::new(&name).exists() {
                 Ok(String::from(name))
             } else {
-                Err(format!(
-                    "{}: {}: no such file or directory",
-                    "ERROR".red(),
-                    name
-                ))
+                Err(format!("{}: no such file or directory", name))
             }
         }
         None => {
