@@ -1,7 +1,6 @@
-use crate::{get_compose_filename, ComposeYaml, Formats, Verbosity};
+use crate::{get_compose_filename, Formats, Verbosity};
 use colored::Colorize;
 use regex::Regex;
-use serde_yaml::Mapping;
 use std::cmp::min;
 use std::ops::Add;
 use std::{fs, process};
@@ -96,17 +95,6 @@ pub fn print_names<'a>(iter: impl Iterator<Item = &'a str>, pretty: Formats) {
                 s.add(b)
             }),
         ),
-    }
-}
-
-pub fn get_service<'a>(compose: &'a ComposeYaml, service_name: &str) -> &'a Mapping {
-    let service = compose.get_service(service_name);
-    match service {
-        None => {
-            eprintln!("{}: No such service found: {}", "ERROR".red(), service_name);
-            process::exit(16);
-        }
-        Some(serv) => serv,
     }
 }
 

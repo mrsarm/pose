@@ -21,7 +21,5 @@ pub use parse::{
     get_compose_filename, header, positive_less_than_32, string_no_empty, string_script,
     ComposeYaml, ReplaceTag,
 };
-pub use utils::{
-    get_service, get_slug, get_yml_content, print_names, unwrap_filter_regex, unwrap_filter_tag,
-};
+pub use utils::{get_slug, get_yml_content, print_names, unwrap_filter_regex, unwrap_filter_tag};
 pub use verbose::Verbosity;

@@ -8,9 +8,9 @@ use std::{fs, process};
 //mod lib;
 //use crate::lib::ComposeYaml;
 use docker_pose::{
-    cmd_get_success_output_or_fail, get_and_save, get_service, get_slug, get_yml_content,
-    print_names, unwrap_filter_regex, unwrap_filter_tag, Args, Commands, ComposeYaml,
-    DockerCommand, GitCommand, Objects, ReplaceTag, Verbosity, POSE_COMPLETE,
+    cmd_get_success_output_or_fail, get_and_save, get_slug, get_yml_content, print_names,
+    unwrap_filter_regex, unwrap_filter_tag, Args, Commands, ComposeYaml, DockerCommand, GitCommand,
+    Objects, ReplaceTag, Verbosity, POSE_COMPLETE,
 };
 
 fn main() {
@@ -128,7 +128,14 @@ fn main() {
     match args.command {
         Commands::List { object, pretty } => match object {
             Objects::Envs { service } => {
-                let serv = get_service(&compose, &service);
+                let serv = compose.get_service(&service).unwrap_or_else(|| {
+                    eprintln!(
+                        "{}: No such service found: {}",
+                        "ERROR".red(),
+                        &service.yellow()
+                    );
+                    process::exit(16);
+                });
                 let envs_op = compose.get_service_envs(serv);
                 if let Some(envs) = envs_op {
                     envs.iter().for_each(|env| println!("{}", env));
