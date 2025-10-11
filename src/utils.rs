@@ -98,6 +98,29 @@ pub fn print_names<'a>(iter: impl Iterator<Item = &'a str>, pretty: Formats) {
     }
 }
 
+pub fn print_service_not_found(service_not_found: &str) -> ! {
+    eprintln!(
+        "{}: No such service found: {}",
+        "ERROR".red(),
+        service_not_found.yellow()
+    );
+    process::exit(16);
+}
+
+pub fn print_services_not_found(not_found_list: Vec<String>) -> Vec<String> {
+    eprintln!(
+        "{}: No such service/s found: {}",
+        "ERROR".red(),
+        not_found_list
+            .iter()
+            .map(|s| s.as_str())
+            .collect::<Vec<_>>()
+            .join(" ")
+            .yellow()
+    );
+    process::exit(16);
+}
+
 pub fn get_yml_content(filename: Option<&str>, verbosity: Verbosity) -> String {
     let filename = get_compose_filename(filename, verbosity).unwrap_or_else(|err| {
         eprintln!("{}: {}", "ERROR".red(), err);

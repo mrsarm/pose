@@ -9,8 +9,9 @@ use std::{fs, process};
 //use crate::lib::ComposeYaml;
 use docker_pose::{
     cmd_get_success_output_or_fail, get_and_save, get_slug, get_yml_content, print_names,
-    unwrap_filter_regex, unwrap_filter_tag, Args, Commands, ComposeYaml, DockerCommand, GitCommand,
-    Objects, ReplaceTag, Verbosity, POSE_COMPLETE,
+    print_service_not_found, print_services_not_found, unwrap_filter_regex, unwrap_filter_tag,
+    Args, Commands, ComposeYaml, DockerCommand, GitCommand, Objects, ReplaceTag, Verbosity,
+    POSE_COMPLETE,
 };
 
 fn main() {
@@ -128,36 +129,18 @@ fn main() {
     match args.command {
         Commands::List { object, pretty } => match object {
             Objects::Envs { service } => {
-                let serv = compose.get_service(&service).unwrap_or_else(|| {
-                    eprintln!(
-                        "{}: No such service found: {}",
-                        "ERROR".red(),
-                        &service.yellow()
-                    );
-                    process::exit(16);
-                });
+                let serv = compose
+                    .get_service(&service)
+                    .unwrap_or_else(|| print_service_not_found(&service));
                 let envs_op = compose.get_service_envs(serv);
                 if let Some(envs) = envs_op {
                     envs.iter().for_each(|env| println!("{}", env));
                 }
             }
             Objects::Depends { services } => {
-                let all_deps_op =
-                    compose
-                        .get_services_depends_on(&services)
-                        .unwrap_or_else(|not_found_list| {
-                            eprintln!(
-                                "{}: No such service/s found: {}",
-                                "ERROR".red(),
-                                not_found_list
-                                    .iter()
-                                    .map(|s| s.as_str())
-                                    .collect::<Vec<_>>()
-                                    .join(" ")
-                                    .yellow()
-                            );
-                            process::exit(16);
-                        });
+                let all_deps_op = compose
+                    .get_services_depends_on(&services)
+                    .unwrap_or_else(print_services_not_found);
                 let names = all_deps_op.iter().map(|s| s.as_str());
                 print_names(names, pretty);
             }
