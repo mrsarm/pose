@@ -8,9 +8,9 @@ use std::{fs, process};
 //mod lib;
 //use crate::lib::ComposeYaml;
 use docker_pose::{
-    cmd_get_success_output_or_fail, get_and_save, get_service, get_services, get_slug,
-    get_yml_content, print_names, unwrap_filter_regex, unwrap_filter_tag, Args, Commands,
-    ComposeYaml, DockerCommand, GitCommand, Objects, ReplaceTag, Verbosity, POSE_COMPLETE,
+    cmd_get_success_output_or_fail, get_and_save, get_service, get_slug, get_yml_content,
+    print_names, unwrap_filter_regex, unwrap_filter_tag, Args, Commands, ComposeYaml,
+    DockerCommand, GitCommand, Objects, ReplaceTag, Verbosity, POSE_COMPLETE,
 };
 
 fn main() {
@@ -135,19 +135,22 @@ fn main() {
                 }
             }
             Objects::Depends { services } => {
-                let services_list = get_services(&compose, &services);
-                let mut all_deps_op: Vec<String> = vec![];
-                for (_, serv) in services_list {
-                    let deps_op = compose.get_service_depends_on(serv);
-                    if let Some(deps) = deps_op {
-                        deps.iter().for_each(|dep| {
-                            if !all_deps_op.contains(dep) && !services.contains(dep) {
-                                all_deps_op.push(dep.to_string())
-                            }
+                let all_deps_op =
+                    compose
+                        .get_services_depends_on(&services)
+                        .unwrap_or_else(|not_found_list| {
+                            eprintln!(
+                                "{}: No such service/s found: {}",
+                                "ERROR".red(),
+                                not_found_list
+                                    .iter()
+                                    .map(|s| s.as_str())
+                                    .collect::<Vec<_>>()
+                                    .join(" ")
+                                    .yellow()
+                            );
+                            process::exit(16);
                         });
-                    }
-                }
-                all_deps_op.sort();
                 let names = all_deps_op.iter().map(|s| s.as_str());
                 print_names(names, pretty);
             }

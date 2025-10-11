@@ -372,7 +372,10 @@ impl ComposeYaml {
         service.map(|v| v.as_mapping()).unwrap_or_default()
     }
 
-    pub fn filter_services(&self, service_names: &[String]) -> Vec<(String, &Mapping)> {
+    /// Return the list of services found in a vector of tuples (name, service).
+    /// If the list is smaller than `service_names.len()`, mean one or more
+    /// services don't exist
+    pub fn filter_services_by_names(&self, service_names: &[String]) -> Vec<(String, &Mapping)> {
         let services = self.get_services();
         let services = services.unwrap_or_else(|| &*EMPTY_MAP);
         let mut list: Vec<(String, &Mapping)> = Vec::new();
@@ -383,6 +386,47 @@ impl ComposeYaml {
             }
         }
         list
+    }
+
+    /// Like `filter_services_by_names`, but return the list of services if all
+    /// elements exist, otherwise it fails with a list of services not found.
+    pub fn get_services_by_names(
+        &self,
+        service_names: &[String],
+    ) -> Result<Vec<(String, &Mapping)>, Vec<String>> {
+        let services = self.filter_services_by_names(service_names);
+        if services.len() < service_names.len() {
+            let not_found = service_names
+                .iter()
+                .filter(|s| !services.iter().any(|(name, _)| *s == name))
+                .map(|s| s.to_string())
+                .collect::<Vec<_>>();
+            return Err(not_found);
+        }
+        Ok(services)
+    }
+
+    /// List of services that are dependencies of the list of services passed.
+    /// If some of the service names passed don't exist, return a list
+    /// of services not found as an error.
+    pub fn get_services_depends_on(
+        &self,
+        service_names: &[String],
+    ) -> Result<Vec<String>, Vec<String>> {
+        let services_list = self.get_services_by_names(service_names)?;
+        let mut all_deps_op: Vec<String> = vec![];
+        for (_, serv) in services_list {
+            let deps_op = self.get_service_depends_on(serv);
+            if let Some(deps) = deps_op {
+                deps.iter().for_each(|dep| {
+                    if !all_deps_op.contains(dep) && !service_names.contains(dep) {
+                        all_deps_op.push(dep.to_string())
+                    }
+                });
+            }
+        }
+        all_deps_op.sort();
+        Ok(all_deps_op)
     }
 
     pub fn get_service_envs(&self, service: &Mapping) -> Option<Vec<String>> {

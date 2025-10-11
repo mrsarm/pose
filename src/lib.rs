@@ -22,7 +22,6 @@ pub use parse::{
     ComposeYaml, ReplaceTag,
 };
 pub use utils::{
-    get_service, get_services, get_slug, get_yml_content, print_names, unwrap_filter_regex,
-    unwrap_filter_tag,
+    get_service, get_slug, get_yml_content, print_names, unwrap_filter_regex, unwrap_filter_tag,
 };
 pub use verbose::Verbosity;

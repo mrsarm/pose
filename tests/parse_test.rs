@@ -346,6 +346,66 @@ services:
 }
 
 #[test]
+fn get_services_depends() -> Result<(), Error> {
+    let yaml = r#"
+services:
+  app:
+    image: the-app
+    depends_on:
+      - x
+  postgres:
+    image: postgres
+  app1:
+    image: some-image
+    ports:
+      - 8000:8000
+    depends_on:
+      - postgres
+      - app
+    "#;
+    let compose = ComposeYaml::new(&yaml)?;
+    let services = vec!["app".to_string(), "app1".to_string()];
+    let all_deps_op = compose.get_services_depends_on(&services);
+    assert_eq!(
+        all_deps_op,
+        Ok(vec!["postgres".to_string(), "x".to_string()])
+    );
+    Ok(())
+}
+
+#[test]
+fn get_services_depends_not_found() -> Result<(), Error> {
+    let yaml = r#"
+services:
+  app:
+    image: the-app
+    depends_on:
+      - x
+  postgres:
+    image: postgres
+  app1:
+    image: some-image
+    ports:
+      - 8000:8000
+    depends_on:
+      - postgres
+      - app
+    "#;
+    let compose = ComposeYaml::new(&yaml)?;
+    let services = vec![
+        "app".to_string(),
+        "dont_exist1".to_string(),
+        "dont_exist2".to_string(),
+    ];
+    let all_deps_op = compose.get_services_depends_on(&services);
+    assert_eq!(
+        all_deps_op,
+        Err(vec!["dont_exist1".to_string(), "dont_exist2".to_string()])
+    );
+    Ok(())
+}
+
+#[test]
 fn get_service_depends_array_notation() -> Result<(), Error> {
     let yaml = r#"
 services:
