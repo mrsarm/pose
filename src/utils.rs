@@ -1,4 +1,4 @@
-use crate::{get_compose_filename, Formats, Verbosity};
+use crate::{Formats, Verbosity, get_compose_filename};
 use colored::Colorize;
 use regex::Regex;
 use std::cmp::min;
@@ -8,7 +8,7 @@ use std::{fs, process};
 /// Get the tag value (or None), or exit if the filter
 /// passed doesn't star with "tag=" prefix.
 pub fn unwrap_filter_tag(filter: Option<&str>) -> Option<&str> {
-    filter.as_ref().map(|f| {
+    filter.map(|f| {
         if let Some(val) = f.strip_prefix("tag=") {
             val
         } else {

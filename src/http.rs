@@ -40,15 +40,15 @@ pub fn get_and_save(
     } else {
         parsed_url.path()
     };
-    if let Some(script) = script {
-        if !url.contains(&script.0) {
-            eprintln!(
-                "{}: the left part of the script '{}' is not part of the URL",
-                "ERROR".red(),
-                script.0.yellow()
-            );
-            process::exit(10);
-        }
+    if let Some(script) = script
+        && !url.contains(&script.0)
+    {
+        eprintln!(
+            "{}: the left part of the script '{}' is not part of the URL",
+            "ERROR".red(),
+            script.0.yellow()
+        );
+        process::exit(10);
     }
     let path = Path::new(path);
     let config: Config = Agent::config_builder()
@@ -67,11 +67,9 @@ pub fn get_and_save(
         headers,
         verbosity.clone(),
     );
-    if !result {
-        if let Some(script) = script {
-            url = url.replace(&script.0, &script.1);
-            result = _get_and_save(&url, output, path, config, headers, verbosity.clone());
-        }
+    if !result && let Some(script) = script {
+        url = url.replace(&script.0, &script.1);
+        result = _get_and_save(&url, output, path, config, headers, verbosity.clone());
     }
     if !result {
         eprintln!("{}: Download failed", "ERROR".red());

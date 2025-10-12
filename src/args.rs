@@ -1,5 +1,5 @@
 /// Types to parse the command line arguments with the clap crate.
-use crate::{header, positive_less_than_32, string_no_empty, string_script, Verbosity};
+use crate::{Verbosity, header, positive_less_than_32, string_no_empty, string_script};
 use clap::{Parser, Subcommand, ValueEnum};
 use std::cmp::Ord;
 

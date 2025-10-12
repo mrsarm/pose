@@ -18,8 +18,8 @@ pub use docker::DockerCommand;
 pub use git::GitCommand;
 pub use http::get_and_save;
 pub use parse::{
-    get_compose_filename, header, positive_less_than_32, string_no_empty, string_script,
-    ComposeYaml, ReplaceTag,
+    ComposeYaml, ReplaceTag, get_compose_filename, header, positive_less_than_32, string_no_empty,
+    string_script,
 };
 pub use utils::{
     get_slug, get_yml_content, print_names, print_service_not_found, print_services_not_found,

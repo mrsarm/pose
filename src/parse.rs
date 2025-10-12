@@ -1,14 +1,14 @@
 use crate::verbose::Verbosity;
-use crate::{get_slug, DockerCommand};
+use crate::{DockerCommand, get_slug};
 use clap_num::number_range;
 use colored::*;
 use regex::Regex;
-use serde_yaml::{to_string, Error, Mapping, Value};
+use serde_yaml::{Error, Mapping, Value, to_string};
 use std::cmp::{max, min};
 use std::collections::BTreeMap;
 use std::path::Path;
 use std::sync::mpsc::{Receiver, Sender};
-use std::sync::{mpsc, Arc, LazyLock, Mutex};
+use std::sync::{Arc, LazyLock, Mutex, mpsc};
 use std::{process, thread};
 
 static EMPTY_MAP: LazyLock<Mapping> = LazyLock::new(Mapping::default);
@@ -352,12 +352,11 @@ impl ComposeYaml {
                                 let remote_image_name = i.split(':').next().unwrap_or_default();
                                 image_name == remote_image_name
                             });
-                            if let Some(remote_image) = remote_image_op {
-                                if remote_image != &image {
-                                    if let Value::String(string) = image_value {
-                                        string.replace_range(.., remote_image);
-                                    }
-                                }
+                            if let Some(remote_image) = remote_image_op
+                                && remote_image != &image
+                                && let Value::String(string) = image_value
+                            {
+                                string.replace_range(.., remote_image);
                             }
                         }
                     });

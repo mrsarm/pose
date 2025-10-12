@@ -8,10 +8,10 @@ use std::{fs, process};
 //mod lib;
 //use crate::lib::ComposeYaml;
 use docker_pose::{
-    cmd_get_success_output_or_fail, get_and_save, get_slug, get_yml_content, print_names,
-    print_service_not_found, print_services_not_found, unwrap_filter_regex, unwrap_filter_tag,
-    Args, Commands, ComposeYaml, DockerCommand, GitCommand, Objects, ReplaceTag, Verbosity,
-    POSE_COMPLETE,
+    Args, Commands, ComposeYaml, DockerCommand, GitCommand, Objects, POSE_COMPLETE, ReplaceTag,
+    Verbosity, cmd_get_success_output_or_fail, get_and_save, get_slug, get_yml_content,
+    print_names, print_service_not_found, print_services_not_found, unwrap_filter_regex,
+    unwrap_filter_tag,
 };
 
 fn main() {
