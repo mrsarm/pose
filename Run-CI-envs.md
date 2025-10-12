@@ -110,8 +110,25 @@ services:
 This is the list of services and images get by `pose`:
 
 ```shell
+$ pose list -p oneline services
+api api-worker postgres rabbitmq web
+```
+
+Note that the `e2e` service is not listed because it has a profile, and
+pose pases the compose file first with `docker compose config` to get the
+definition of the services and images (it's called internally), but the
+command strips out any service that belong to a profile, given that services
+under a profile don't run by default. To list all services including the
+ones under a profile, use the `--no-interpolate` option:
+
+```shell
 $ pose --no-interpolate list -p oneline services
 api api-worker postgres rabbitmq web e2e
+```
+
+Then, let's see the images:
+
+```shell
 $ pose list -p oneline images
 mrsarm/api mrsarm/api-worker mrsarm/web mrsarm/e2e postgres:15 rabbitmq:3
 ```
@@ -178,7 +195,7 @@ output, while showing in the terminal (or the CI logs) what is doing while fetch
 information from the docker registry:
 
 ```shell
-pose config --tag "$GITHUB_REF_NAME" --progress -o ci.yaml
+pose --no-interpolate config --tag "$GITHUB_REF_NAME" --progress -o ci.yaml
 ```
 
 The remote progress will look like the following:
@@ -267,7 +284,7 @@ chars like "/" that is turned into "-" (pose slugify any argument passed to
 `-t`, `--tag` anyway, unless `--no-slug` is passed as well).
 
 ```shell
-pose config -t "$(pose slug)" --tag-filter regex='mrsarm/' -o ci.yaml
+pose --no-interpolate config -t "$(pose slug)" --tag-filter regex='mrsarm/' -o ci.yaml
 ```
 
 #### Filters
@@ -286,7 +303,7 @@ unlikely and even undesired to have an official Postgres image `postgres:client-
 but more importantly, the execution in our CI pipeline will be much faster.
 
 ```
-pose config -t "$GITHUB_REF_NAME" --tag-filter regex='mrsarm/' -o ci.yaml --progress
+pose --no-interpolate config -t "$GITHUB_REF_NAME" --tag-filter regex='mrsarm/' -o ci.yaml --progress
 
 DEBUG: manifest for image postgres ... skipped 
 DEBUG: manifest for image rabbitmq ... skipped
@@ -304,7 +321,7 @@ it's an _exclusion_ expression, all images with the string `postgres` or `rabbit
 on it will be ignored when replacing tags:
 
 ```shell
-pose config -t "$GITHUB_REF_NAME" --tag-filter regex!='postgres|rabbitmq' -o ci.yaml --progress
+pose --no-interpolate config -t "$GITHUB_REF_NAME" --tag-filter regex!='postgres|rabbitmq' -o ci.yaml --progress
 ```
 
 #### Installing pose in a CI environment
@@ -395,16 +412,15 @@ file from https://raw.githubusercontent.com/mrsarm/e2e/master/compose.yaml (the 
 
 #### `--no-docker` argument
 
-The command `pose config` call to `docker config --no-interpolate --no-normalize` first
+The command `pose config` call to `docker config --no-normalize` first
 to pre-process the compose file, which is specially useful if you want to merge multiple
 compose files (you can pass more than one compose file with the argument `-f`, `--file`),
 but in old versions of `docker compose` the `config` command outputs the new compose file
 removing first all the objects, including services that should not be executed or used
 when running `docker compose up`, so any service with a `profile:` set is going to be
-removed in the output (this doesn't happen with newer versions of compose). So if you
-don't need to pass more than one compose file to pose, or you have an old version of
-Compose, use the flag `--no-docker` so Pose skip the prep-processing of your compose
-file with `docker compose config`.
+removed in the output (that's why you can skip this behaviour with `--no-interpolate`).
+So if you don't need to pass more than one compose file to pose, use the flag `--no-docker`
+so Pose skips the prep-processing of your compose file made by `docker compose config`.
 
 ```shell
 pose --no-docker config [...]
