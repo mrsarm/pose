@@ -5,7 +5,7 @@ _pose_complete() {
     cur="${COMP_WORDS[COMP_CWORD]}"
     prev="${COMP_WORDS[COMP_CWORD-1]}"
     cmds="list config slug get help"
-    opts="-f --file --verbose -q --quiet --no-docker --no-consistency -h --help -V --version"
+    opts="-f --file --verbose -q --quiet --no-docker --no-consistency --no-interpolate -h --help -V --version"
     opts_list="-p --pretty -h --help"
     opts_config="-o --output -t --tag --tag-filter --ignore-unauthorized --no-slug --offline --progress --threads -h --help"
     opts_slug="-h --help"
