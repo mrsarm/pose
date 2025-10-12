@@ -1,6 +1,6 @@
 pub static POSE_COMPLETE: &str = r#"
 _pose_complete() {
-    local cur prev cmds opts opts_list opts_config opts_slug opts_get opts_list_commands
+    local cur prev cmds opts opts_list opts_config opts_list_services opts_slug opts_get opts_list_commands
     COMPREPLY=()
     cur="${COMP_WORDS[COMP_CWORD]}"
     prev="${COMP_WORDS[COMP_CWORD-1]}"
@@ -8,6 +8,7 @@ _pose_complete() {
     opts="-f --file --verbose -q --quiet --no-docker --no-consistency --no-interpolate -h --help -V --version"
     opts_list="-p --pretty -h --help"
     opts_config="-o --output -t --tag --tag-filter --ignore-unauthorized --no-slug --offline --progress --threads -h --help"
+    opts_list_services="-f --filter -h --help"
     opts_slug="-h --help"
     opts_get="-o --output --timeout-connect -m --max-time -H --header -h --help"
     opts_list_commands="services images depends volumes networks configs secrets profiles envs help"
@@ -38,6 +39,10 @@ _pose_complete() {
                 ;;
             get)
                 COMPREPLY=( $(compgen -W "${opts_get}" -- ${cur}) )
+                return 0
+                ;;
+            services)
+                COMPREPLY=( $(compgen -W "${opts_list_services}" -- ${cur}) )
                 return 0
                 ;;
         esac

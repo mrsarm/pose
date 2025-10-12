@@ -194,11 +194,18 @@ fn main() {
                     }
                 }
             }
-            Objects::Services
-            | Objects::Volumes
-            | Objects::Networks
-            | Objects::Configs
-            | Objects::Secrets => {
+            Objects::Services { filter } => {
+                let filter_by_tag = unwrap_filter_tag(filter.as_deref());
+                if let Some(tag_name) = filter_by_tag {
+                    let services = compose.filter_services_by_image_tag(tag_name);
+                    let service_names_iter = services.iter().map(|s| s.0.as_str());
+                    print_names(service_names_iter, pretty);
+                } else {
+                    let el_iter = compose.get_root_element_names("services").into_iter();
+                    print_names(el_iter, pretty);
+                }
+            }
+            Objects::Volumes | Objects::Networks | Objects::Configs | Objects::Secrets => {
                 let root_element = object.to_string().to_lowercase();
                 let el_iter = compose.get_root_element_names(&root_element).into_iter();
                 print_names(el_iter, pretty);

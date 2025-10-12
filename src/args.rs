@@ -134,7 +134,11 @@ pub enum Commands {
 #[derive(Subcommand, strum_macros::Display, PartialEq)]
 pub enum Objects {
     /// List services
-    Services,
+    Services {
+        /// filter by a property, currently only tag=TAG is supported
+        #[arg(short, long)]
+        filter: Option<String>,
+    },
     /// List images
     Images {
         /// filter by a property, if --tag is used as well,

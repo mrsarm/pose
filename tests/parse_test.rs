@@ -32,6 +32,40 @@ volumes:
 }
 
 #[test]
+fn get_services_list_filter_by_image_tag() -> Result<(), Error> {
+    let yaml = "
+services:
+  app: the-app
+  app1:
+    image: some-image
+    ports:
+      - 8000:8000
+  app2:
+    image: another-image:2.0
+    ports:
+      - 9000:9000
+  app3:
+    image: another-image:2.0.1
+    ports:
+      - 9001:9001
+    depends_on:
+      - app2
+  app4:
+    image: me:2.0
+    ports:
+      - 9003:9003
+
+volumes:
+  - no-body-cares
+    ";
+    let compose = ComposeYaml::new(&yaml)?;
+    let services = compose.filter_services_by_image_tag("2.0");
+    let services_names = services.iter().map(|e| e.0.as_str()).collect::<Vec<_>>();
+    assert_eq!(services_names, vec!["app2", "app4"]);
+    Ok(())
+}
+
+#[test]
 fn get_services_empty_list() -> Result<(), Error> {
     let yaml = "
 services: []

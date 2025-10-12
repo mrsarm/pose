@@ -110,7 +110,7 @@ services:
 This is the list of services and images get by `pose`:
 
 ```shell
-$ pose list -p oneline services
+$ pose --no-interpolate list -p oneline services
 api api-worker postgres rabbitmq web e2e
 $ pose list -p oneline images
 mrsarm/api mrsarm/api-worker mrsarm/web mrsarm/e2e postgres:15 rabbitmq:3

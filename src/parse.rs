@@ -372,7 +372,7 @@ impl ComposeYaml {
     }
 
     /// Return the list of services found in a vector of tuples (name, service).
-    /// If the list is smaller than `service_names.len()`, mean one or more
+    /// If the list is smaller than `service_names.len()`, means one or more
     /// services don't exist
     pub fn filter_services_by_names(&self, service_names: &[String]) -> Vec<(String, &Mapping)> {
         let services = self.get_services();
@@ -382,6 +382,31 @@ impl ComposeYaml {
             let service = services.get(name);
             if let Some(s) = service.and_then(|s| s.as_mapping()) {
                 list.push((name.to_string(), s));
+            }
+        }
+        list
+    }
+
+    /// Return the list of services found in a vector of tuples (name, service),
+    /// filtering by image tag name.
+    pub fn filter_services_by_image_tag(&self, filter_by_tag: &str) -> Vec<(String, &Mapping)> {
+        let services = self.get_services().unwrap_or_else(|| &*EMPTY_MAP);
+        let mut list: Vec<(String, &Mapping)> = Vec::new();
+        for service_name in services.keys().flat_map(|k| k.as_str()) {
+            let service = services
+                .get(service_name)
+                .and_then(|s| s.as_mapping())
+                .unwrap_or(&*EMPTY_MAP);
+            if let Some(img) = service.get("image").and_then(|v| v.as_str()) {
+                let image_parts = img.split(':').collect::<Vec<_>>();
+                let image_tag = if image_parts.len() > 1 {
+                    *image_parts.get(1).unwrap()
+                } else {
+                    "latest"
+                };
+                if image_tag == filter_by_tag {
+                    list.push((service_name.to_string(), service));
+                }
             }
         }
         list
