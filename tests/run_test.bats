@@ -188,3 +188,14 @@ setup() {
     assert_failure
     assert_output --partial "ERROR: URL without filename, you have to provide the filename where to store the file with the argument -o, --output"
 }
+
+@test "can output config managing interpolation" {
+    # With interpolation (default)
+    run target/debug/pose -f tests/with-interpolation.yml config
+    assert_success
+    assert_output --partial 'app:latest'
+    # Without interpolation
+    run target/debug/pose --no-interpolate -f tests/with-interpolation.yml config
+    assert_success
+    assert_output --partial 'app:${TAG:-latest}'
+}
