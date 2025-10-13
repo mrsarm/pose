@@ -114,12 +114,12 @@ $ pose list -p oneline services
 api api-worker postgres rabbitmq web
 ```
 
-Note that the `e2e` service is not listed because it has a profile, and
-pose pases the compose file first with `docker compose config` to get the
-definition of the services and images (it's called internally), but the
-command strips out any service that belong to a profile, given that services
-under a profile don't run by default. To list all services including the
-ones under a profile, use the `--no-interpolate` option:
+Note that the `e2e` service is not listed because it has a profile, and pose
+pases the compose file first to the `docker compose config` command to get the
+definition of the services and images (it's called internally), and the command
+strips out any service that belong to a profile, given that services under a
+profile don't run by default. To list all services including the ones under a
+profile, use the `--no-interpolate` option:
 
 ```shell
 $ pose --no-interpolate list -p oneline services
@@ -167,28 +167,29 @@ GitHub Actions set the environment variable `GITHUB_REF_NAME` with the name of t
 the CI task is running against to, so making the change above, `docker compose ...` will
 replace at runtime the expression `mrsarm/web:${GITHUB_REF_NAME:-latest}` with
 `mrsarm/web:client-vat-field`, producing the expected result of executing the tests on the
-image desired, while when running the same compose file locally, the expression will be
+image desired, while, when running the same compose file locally, the expression will be
 turned into `mrsarm/web:latest` because the env variable `GITHUB_REF_NAME` doesn't exist.
 
 All right, right?
 
 #### The problem
 
-The problem is, when you move forward with the rest of the apps where you add the feature,
-how your CI environment distinguishes between the services that already
+The problem is, when you move forward with the rest of the apps where you didn't add
+the feature, how your CI environment distinguishes between the services that already
 have the feature developed and published in the docker registry and
-the ones don't? if you add the suffix `${GITHUB_REF_NAME:-latest}` to all the
+the ones tht don't? if you add the suffix `${GITHUB_REF_NAME:-latest}` to all the
 images in the compose file (not to the DB images like postgres though), it will work as long
 as all exist in the docker registry, but if let's say `mrsarm/api-worker:client-vat-field`
-was not developed and published yet, `docker compose up` will exit with an
-error like `manifest for mrsarm/api-worker:client-vat-field not found`.
+was not developed and published yet (or maybe never will because you don't need
+to change it), `docker compose up` will exit with an error
+like `manifest for mrsarm/api-worker:client-vat-field not found`.
 
 #### Pose to the rescue
 
 In the example above you only need to run the services with the tag `client-vat-field`
 if the tag exists in the registry to be pulled by compose, otherwise keep using the
 same `latest` tag set in the compose file, or whatever tag is set. You can achieve this with
-the command `pose config` using the `--tag TAG` argument, that like
+the command `pose config`, using the `--tag TAG` argument, that like
 `docker compose config` it outputs a new compose file but pre-processing it according to
 the arguments received. The following will output a new `ci.yaml` file with the desired
 output, while showing in the terminal (or the CI logs) what is doing while fetching the
@@ -259,16 +260,16 @@ instead of the original `compose.yaml` file.
 ### Advance options
 
 There are more options that you can see with `pose config --help`, but there
-are two special arguments that can help the process to speed up the execution.
+are three special arguments that can help the process to speed up the execution.
 
 #### Threads
 
 The process of checking all the images your compose file has can
-be slow, specially in a big app composed of dozens of apps.
+be slow, especially in a big app composed of dozens of apps.
 The argument `--threads NUM` allows to specify the max number of parallel
 threads to be used when fetching the images info from the remote registry. 
-The default is 8 threads, and can be increased up to 32, but be carefully with
-it, a high number can lead the docker registry to start responding with errors
+The default is 8 threads, and can be increased up to 32, but be careful with
+it; a high number can lead the docker registry to start responding with errors
 related with rate limits reached.
 
 #### Offline mode
@@ -314,7 +315,7 @@ DEBUG: manifest for image mrsarm/e2e:client-vat-field ... not found
 ```
 
 It's recommended to use a _filter‒out_ expression when not all images follow certain convention
-like in our example where all company's image start with the `mrsarm/` prefix, but at least
+like in our example where all company's images start with the `mrsarm/` prefix, but at least
 you know what are the images you don't want to be checked, so a regex expression using
 `regex!=` could be as follows to achieve the same result: `postgres|rabbitmq`. Because
 it's an _exclusion_ expression, all images with the string `postgres` or `rabbitmq`
@@ -410,25 +411,29 @@ https://raw.githubusercontent.com/mrsarm/e2e/ux-fix/compose.yaml returns
 HTTP 404 (Not Found), following the expression `"$TAG:master"` (`ux-fix:master"`) pose will try to get the
 file from https://raw.githubusercontent.com/mrsarm/e2e/master/compose.yaml (the "master" version).
 
-#### `--no-docker` argument
+#### `--no-docker` and `--no-interpolate` arguments
 
 The command `pose config` call to `docker config --no-normalize` first
 to pre-process the compose file, which is specially useful if you want to merge multiple
 compose files (you can pass more than one compose file with the argument `-f`, `--file`),
-but in old versions of `docker compose` the `config` command outputs the new compose file
-removing first all the objects, including services that should not be executed or used
-when running `docker compose up`, so any service with a `profile:` set is going to be
-removed in the output (that's why you can skip this behaviour with `--no-interpolate`).
-So if you don't need to pass more than one compose file to pose, use the flag `--no-docker`
-so Pose skips the prep-processing of your compose file made by `docker compose config`.
+but the `docker compose config` command outputs the new compose file removing first all the objects
+that are not going to be executed or used when running `docker compose up`, so any service with
+a `profile:` set is going to be removed in the output, that's why you can skip this behavior
+with `--no-interpolate`, that change the command called internally by pose from `docker compose config`
+to `docker compose config --no-interpolate`. The good part of using this trick is that you can
+pass more than one compose file to pose, and pose will merge them all, but the output will
+be the same as if you passed only one compose file.
+
+But if you don't need to pass more than one compose file to pose, another option is to
+use the flag `--no-docker` so Pose skips the prep-processing of your compose file made
+by `docker compose config`. This is useful if you don't have `docker` or `docker compose`
+installed in your CI environment.
 
 ```shell
 pose --no-docker config [...]
 ```
 
-This is the case for GitHub Action at the day of writing this section, and can be
-the case for CI environments that don't ship the `docker` or the `docker compose` command
-in the pod running the jobs as well.
+Anyway, modern CI environments have docker installed, so it's tour choice which option to use.
 
 ### GitHub Action example
 

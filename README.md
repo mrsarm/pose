@@ -141,7 +141,7 @@ Include the directory Pose is in, in your [PATH Variable](https://www.baeldung.c
 if you wish to be able to execute it anywhere, or move Pose to a directory already
 included in your `$PATH` variable, like `$HOME/.local/bin`.
 
-## Enable tab completion
+### Enable tab completion
 
 Running the following command the tab autocompletion is enabled in the current
 terminal session:
