@@ -11,7 +11,7 @@ _pose_complete() {
     opts_list_services="-f --filter -h --help"
     opts_slug="-h --help"
     opts_get="-o --output --timeout-connect -m --max-time -H --header -h --help"
-    opts_list_commands="services images depends volumes networks configs secrets profiles envs help"
+    opts_list_commands="services images depends dependents volumes networks configs secrets profiles envs help"
     pretty_values="full oneline"
 
     _filedir() {

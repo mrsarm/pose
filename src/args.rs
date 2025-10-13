@@ -178,6 +178,11 @@ pub enum Objects {
         #[arg(required = true)]
         services: Vec<String>,
     },
+    /// List services that are dependants of the given services
+    Dependents {
+        #[arg(required = true)]
+        services: Vec<String>,
+    },
     /// List volumes
     Volumes,
     /// List networks

@@ -453,6 +453,33 @@ impl ComposeYaml {
         Ok(all_deps_op)
     }
 
+    /// Return the list of services that are dependents of the list of services passed.
+    pub fn get_services_dependants(
+        &self,
+        service_names: &[String],
+    ) -> Option<Vec<String>> {
+        let services = self.get_services()?;
+        let mut all_dependants: Vec<String> = vec![];
+        for (service_name, serv) in services {
+            if let Some(serv) = serv.as_mapping()
+               && let Some(service_name) = service_name.as_str().map(|s| s.to_string())
+            {
+                if !service_names.contains(&service_name) {
+                    let deps_op = self.get_service_depends_on(serv);
+                    if let Some(deps) = deps_op {
+                        for dep in deps.iter() {
+                            if !all_dependants.contains(dep) && service_names.contains(dep) {
+                                all_dependants.push(service_name.clone())
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        all_dependants.sort();
+        Some(all_dependants)
+    }
+
     pub fn get_service_envs(&self, service: &Mapping) -> Option<Vec<String>> {
         let envs = service.get("environment")?;
         match envs.as_sequence() {

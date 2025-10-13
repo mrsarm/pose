@@ -380,6 +380,71 @@ services:
 }
 
 #[test]
+fn get_service_dependants() -> Result<(), Error> {
+    let yaml = r#"
+services:
+  app:
+    image: the-app
+    depends_on:
+      - x
+  postgres:
+    image: postgres
+  app1:
+    image: some-image
+    ports:
+      - 8000:8000
+    depends_on:
+      - postgres
+      - app
+    "#;
+    let compose = ComposeYaml::new(&yaml)?;
+    let services = vec!["app".to_string()];
+    let depends_on = compose.get_services_dependants(&services);
+    assert_eq!(
+        depends_on.unwrap_or(Vec::default()),
+        vec!["app1"]
+    );
+    Ok(())
+}
+
+#[test]
+fn get_service_dependants_expanded() -> Result<(), Error> {
+    let yaml = r#"
+services:
+  app:
+    image: the-app
+    depends_on:
+      - x
+  postgres:
+    image: postgres
+  app1:
+    image: some-image
+    ports:
+      - 8000:8000
+    depends_on:
+      - postgres
+      - app
+  app2:
+    image: some-image-2:dev
+    ports:
+      - 8001:8001
+    depends_on:
+      app:
+        condition: service_started
+      postgres:
+        condition: service_started
+    "#;
+    let compose = ComposeYaml::new(&yaml)?;
+    let services = vec!["app".to_string()];
+    let depends_on = compose.get_services_dependants(&services);
+    assert_eq!(
+        depends_on.unwrap_or(Vec::default()),
+        vec!["app1", "app2"]
+    );
+    Ok(())
+}
+
+#[test]
 fn get_services_depends() -> Result<(), Error> {
     let yaml = r#"
 services:

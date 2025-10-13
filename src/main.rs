@@ -145,6 +145,13 @@ fn main() {
                 let names = all_deps_op.iter().map(|s| s.as_str());
                 print_names(names, pretty);
             }
+            Objects::Dependents { services } => {
+                let all_deps_op = compose.get_services_dependants(&services);
+                if let Some(deps) = all_deps_op {
+                    let names = deps.iter().map(|s| s.as_str());
+                    print_names(names, pretty);
+                }
+            }
             Objects::Profiles => {
                 let op = compose.get_profiles_names();
                 match op {
