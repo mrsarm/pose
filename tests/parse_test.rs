@@ -400,10 +400,7 @@ services:
     let compose = ComposeYaml::new(&yaml)?;
     let services = vec!["app".to_string()];
     let depends_on = compose.get_services_dependants(&services);
-    assert_eq!(
-        depends_on.unwrap_or(Vec::default()),
-        vec!["app1"]
-    );
+    assert_eq!(depends_on.unwrap_or(Vec::default()), vec!["app1"]);
     Ok(())
 }
 
@@ -437,10 +434,7 @@ services:
     let compose = ComposeYaml::new(&yaml)?;
     let services = vec!["app".to_string()];
     let depends_on = compose.get_services_dependants(&services);
-    assert_eq!(
-        depends_on.unwrap_or(Vec::default()),
-        vec!["app1", "app2"]
-    );
+    assert_eq!(depends_on.unwrap_or(Vec::default()), vec!["app1", "app2"]);
     Ok(())
 }
 
