@@ -2,19 +2,29 @@
 
 use clap::Parser;
 use colored::*;
+use std::env;
 use std::{fs, process};
 
 //mod lib;
 //use crate::lib::ComposeYaml;
 use docker_pose::{
-    cmd_get_success_output_or_fail, get_and_save, get_service, get_slug, get_yml_content,
-    print_names, unwrap_filter_regex, unwrap_filter_tag, Args, Commands, ComposeYaml,
-    DockerCommand, GitCommand, Objects, ReplaceTag, Verbosity,
+    Args, Commands, ComposeYaml, DockerCommand, GitCommand, Objects, POSE_COMPLETE, ReplaceTag,
+    Verbosity, cmd_get_success_output_or_fail, get_and_save, get_slug, get_yml_content,
+    print_names, print_service_not_found, print_services_not_found, unwrap_filter_regex,
+    unwrap_filter_tag,
 };
 
 fn main() {
     setup_terminal();
-    let args = Args::parse();
+    let args = Args::try_parse().unwrap_or_else(|e| {
+        let pose_complete = env::var("_POSE_ARGCOMPLETE").unwrap_or("".to_string());
+        if pose_complete == "source" {
+            // output bash tab autocompletion script
+            println!("{}", POSE_COMPLETE);
+            process::exit(1);
+        }
+        e.exit();
+    });
     let verbosity = args.get_verbosity();
     // TODO check here Commands::Get to avoid compose parsing
     if let Commands::Slug { text } = args.command {
@@ -79,6 +89,7 @@ fn main() {
             let result_output = command.call_compose_config(
                 &args.filenames.iter().map(AsRef::as_ref).collect::<Vec<_>>(),
                 args.no_consistency,
+                args.no_interpolate,
                 false,
                 false,
             );
@@ -119,17 +130,26 @@ fn main() {
     match args.command {
         Commands::List { object, pretty } => match object {
             Objects::Envs { service } => {
-                let serv = get_service(&compose, &service);
+                let serv = compose
+                    .get_service(&service)
+                    .unwrap_or_else(|| print_service_not_found(&service));
                 let envs_op = compose.get_service_envs(serv);
                 if let Some(envs) = envs_op {
                     envs.iter().for_each(|env| println!("{}", env));
                 }
             }
-            Objects::Depends { service } => {
-                let serv = get_service(&compose, &service);
-                let deps_op = compose.get_service_depends_on(serv);
-                if let Some(envs) = deps_op {
-                    envs.iter().for_each(|env| println!("{}", env));
+            Objects::Depends { services } => {
+                let all_deps_op = compose
+                    .get_services_depends_on(&services)
+                    .unwrap_or_else(print_services_not_found);
+                let names = all_deps_op.iter().map(|s| s.as_str());
+                print_names(names, pretty);
+            }
+            Objects::Dependents { services } => {
+                let all_deps_op = compose.get_services_dependants(&services);
+                if let Some(deps) = all_deps_op {
+                    let names = deps.iter().map(|s| s.as_str());
+                    print_names(names, pretty);
                 }
             }
             Objects::Profiles => {
@@ -176,16 +196,23 @@ fn main() {
                         process::exit(15);
                     }
                     Some(images) => {
-                        let images_list = images.iter().map(|i| i.as_str()).collect::<Vec<_>>();
+                        let images_list = images.iter().map(|i| i.as_str());
                         print_names(images_list.into_iter(), pretty);
                     }
                 }
             }
-            Objects::Services
-            | Objects::Volumes
-            | Objects::Networks
-            | Objects::Configs
-            | Objects::Secrets => {
+            Objects::Services { filter } => {
+                let filter_by_tag = unwrap_filter_tag(filter.as_deref());
+                if let Some(tag_name) = filter_by_tag {
+                    let services = compose.filter_services_by_image_tag(tag_name);
+                    let service_names_iter = services.iter().map(|s| s.0.as_str());
+                    print_names(service_names_iter, pretty);
+                } else {
+                    let el_iter = compose.get_root_element_names("services").into_iter();
+                    print_names(el_iter, pretty);
+                }
+            }
+            Objects::Volumes | Objects::Networks | Objects::Configs | Objects::Secrets => {
                 let root_element = object.to_string().to_lowercase();
                 let el_iter = compose.get_root_element_names(&root_element).into_iter();
                 print_names(el_iter, pretty);

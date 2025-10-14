@@ -1,15 +1,14 @@
-use crate::{get_compose_filename, ComposeYaml, Formats, Verbosity};
+use crate::{Formats, Verbosity, get_compose_filename};
 use colored::Colorize;
 use regex::Regex;
-use serde_yaml::Mapping;
 use std::cmp::min;
-use std::vec::IntoIter;
+use std::ops::Add;
 use std::{fs, process};
 
 /// Get the tag value (or None), or exit if the filter
 /// passed doesn't star with "tag=" prefix.
 pub fn unwrap_filter_tag(filter: Option<&str>) -> Option<&str> {
-    filter.as_ref().map(|f| {
+    filter.map(|f| {
         if let Some(val) = f.strip_prefix("tag=") {
             val
         } else {
@@ -86,22 +85,40 @@ fn invalid_regex_exit(e: regex::Error, val: &str) -> ! {
     process::exit(2);
 }
 
-pub fn print_names(iter: IntoIter<&str>, pretty: Formats) {
+pub fn print_names<'a>(iter: impl Iterator<Item = &'a str>, pretty: Formats) {
     match pretty {
         Formats::Full => iter.for_each(|service| println!("{}", service)),
-        Formats::Oneline => println!("{}", iter.collect::<Vec<&str>>().join(" ")),
+        Formats::Oneline => println!(
+            "{}",
+            iter.fold(String::with_capacity(1024), |a, b| {
+                let s = if !a.is_empty() { a.add(" ") } else { a };
+                s.add(b)
+            }),
+        ),
     }
 }
 
-pub fn get_service<'a>(compose: &'a ComposeYaml, service_name: &str) -> &'a Mapping {
-    let service = compose.get_service(service_name);
-    match service {
-        None => {
-            eprintln!("{}: No such service found: {}", "ERROR".red(), service_name);
-            process::exit(16);
-        }
-        Some(serv) => serv,
-    }
+pub fn print_service_not_found(service_not_found: &str) -> ! {
+    eprintln!(
+        "{}: No such service found: {}",
+        "ERROR".red(),
+        service_not_found.yellow()
+    );
+    process::exit(16);
+}
+
+pub fn print_services_not_found(not_found_list: Vec<String>) -> Vec<String> {
+    eprintln!(
+        "{}: No such service/s found: {}",
+        "ERROR".red(),
+        not_found_list
+            .iter()
+            .map(|s| s.as_str())
+            .collect::<Vec<_>>()
+            .join(" ")
+            .yellow()
+    );
+    process::exit(16);
 }
 
 pub fn get_yml_content(filename: Option<&str>, verbosity: Verbosity) -> String {

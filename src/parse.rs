@@ -1,21 +1,19 @@
 use crate::verbose::Verbosity;
-use crate::{get_slug, DockerCommand};
+use crate::{DockerCommand, get_slug};
 use clap_num::number_range;
 use colored::*;
 use regex::Regex;
-use serde_yaml::{to_string, Error, Mapping, Value};
+use serde_yaml::{Error, Mapping, Value, to_string};
 use std::cmp::{max, min};
 use std::collections::BTreeMap;
 use std::path::Path;
 use std::sync::mpsc::{Receiver, Sender};
-use std::sync::{mpsc, Arc, Mutex};
+use std::sync::{Arc, LazyLock, Mutex, mpsc};
 use std::{process, thread};
 
-lazy_static! {
-    static ref EMPTY_MAP: Mapping = Mapping::default();
-    static ref ENV_NAME_REGEX: Regex = Regex::new(r"^\w+$").unwrap();
-    static ref QUOTED_NUM_REGEX: Regex = Regex::new(r"^'[0-9]+'$").unwrap();
-}
+static EMPTY_MAP: LazyLock<Mapping> = LazyLock::new(Mapping::default);
+static ENV_NAME_REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^\w+$").unwrap());
+static QUOTED_NUM_REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^'[0-9]+'$").unwrap());
 
 pub struct ComposeYaml {
     map: BTreeMap<String, Value>,
@@ -150,9 +148,11 @@ impl ComposeYaml {
                 let thread_tx = tx.clone();
                 let child = thread::spawn(move || {
                     loop {
-                        let mut v = input.lock().unwrap();
-                        let last = v.pop(); // take one element out from the vec and free
-                        drop(v); // the vector lock so other threads can get it
+                        let last: Option<String>;
+                        {
+                            let mut v = input.lock().unwrap();
+                            last = v.pop(); // take one element out from the vec and free
+                        } // the vector lock so other threads can get it (drop of v happens here)
                         if let Some(image) = last {
                             let image_parts = image.split(':').collect::<Vec<_>>();
                             let image_name = *image_parts.first().unwrap();
@@ -352,12 +352,11 @@ impl ComposeYaml {
                                 let remote_image_name = i.split(':').next().unwrap_or_default();
                                 image_name == remote_image_name
                             });
-                            if let Some(remote_image) = remote_image_op {
-                                if remote_image != &image {
-                                    if let Value::String(string) = image_value {
-                                        string.replace_range(.., remote_image);
-                                    }
-                                }
+                            if let Some(remote_image) = remote_image_op
+                                && remote_image != &image
+                                && let Value::String(string) = image_value
+                            {
+                                string.replace_range(.., remote_image);
                             }
                         }
                     });
@@ -370,6 +369,111 @@ impl ComposeYaml {
         let services = self.get_services()?;
         let service = services.get(service_name);
         service.map(|v| v.as_mapping()).unwrap_or_default()
+    }
+
+    /// Return the list of services found in a vector of tuples (name, service).
+    /// If the list is smaller than `service_names.len()`, means one or more
+    /// services don't exist
+    pub fn filter_services_by_names(&self, service_names: &[String]) -> Vec<(String, &Mapping)> {
+        let services = self.get_services();
+        let services = services.unwrap_or_else(|| &*EMPTY_MAP);
+        let mut list: Vec<(String, &Mapping)> = Vec::new();
+        for name in service_names {
+            let service = services.get(name);
+            if let Some(s) = service.and_then(|s| s.as_mapping()) {
+                list.push((name.to_string(), s));
+            }
+        }
+        list
+    }
+
+    /// Return the list of services found in a vector of tuples (name, service),
+    /// filtering by image tag name.
+    pub fn filter_services_by_image_tag(&self, filter_by_tag: &str) -> Vec<(String, &Mapping)> {
+        let services = self.get_services().unwrap_or_else(|| &*EMPTY_MAP);
+        let mut list: Vec<(String, &Mapping)> = Vec::new();
+        for service_name in services.keys().flat_map(|k| k.as_str()) {
+            let service = services
+                .get(service_name)
+                .and_then(|s| s.as_mapping())
+                .unwrap_or(&*EMPTY_MAP);
+            if let Some(img) = service.get("image").and_then(|v| v.as_str()) {
+                let image_parts = img.split(':').collect::<Vec<_>>();
+                let image_tag = if image_parts.len() > 1 {
+                    *image_parts.get(1).unwrap()
+                } else {
+                    "latest"
+                };
+                if image_tag == filter_by_tag {
+                    list.push((service_name.to_string(), service));
+                }
+            }
+        }
+        list
+    }
+
+    /// Like `filter_services_by_names`, but return the list of services if all
+    /// elements exist, otherwise it fails with a list of services not found.
+    pub fn get_services_by_names(
+        &self,
+        service_names: &[String],
+    ) -> Result<Vec<(String, &Mapping)>, Vec<String>> {
+        let services = self.filter_services_by_names(service_names);
+        if services.len() < service_names.len() {
+            let not_found = service_names
+                .iter()
+                .filter(|s| !services.iter().any(|(name, _)| *s == name))
+                .map(|s| s.to_string())
+                .collect::<Vec<_>>();
+            return Err(not_found);
+        }
+        Ok(services)
+    }
+
+    /// List of services that are dependencies of the list of services passed.
+    /// If some of the service names passed don't exist, return a list
+    /// of services not found as an error.
+    pub fn get_services_depends_on(
+        &self,
+        service_names: &[String],
+    ) -> Result<Vec<String>, Vec<String>> {
+        let services_list = self.get_services_by_names(service_names)?;
+        let mut all_deps_op: Vec<String> = vec![];
+        for (_, serv) in services_list {
+            let deps_op = self.get_service_depends_on(serv);
+            if let Some(deps) = deps_op {
+                deps.iter().for_each(|dep| {
+                    if !all_deps_op.contains(dep) && !service_names.contains(dep) {
+                        all_deps_op.push(dep.to_string())
+                    }
+                });
+            }
+        }
+        all_deps_op.sort();
+        Ok(all_deps_op)
+    }
+
+    /// Return the list of services that are dependents of the list of services passed.
+    pub fn get_services_dependants(&self, service_names: &[String]) -> Option<Vec<String>> {
+        let services = self.get_services()?;
+        let mut all_dependants: Vec<String> = vec![];
+        for (service_name, serv) in services {
+            if let Some(serv) = serv.as_mapping()
+                && let Some(service_name) = service_name.as_str().map(|s| s.to_string())
+                && !service_names.contains(&service_name)
+            {
+                let deps_op = self.get_service_depends_on(serv);
+                if let Some(deps) = deps_op {
+                    for dep in deps.iter() {
+                        if !all_dependants.contains(dep) && service_names.contains(dep) {
+                            all_dependants.push(service_name.clone())
+                        }
+                    }
+                }
+            }
+        }
+        all_dependants.sort();
+        Some(all_dependants)
     }
 
     pub fn get_service_envs(&self, service: &Mapping) -> Option<Vec<String>> {
@@ -457,11 +561,7 @@ pub fn get_compose_filename(
             if Path::new(&name).exists() {
                 Ok(String::from(name))
             } else {
-                Err(format!(
-                    "{}: {}: no such file or directory",
-                    "ERROR".red(),
-                    name
-                ))
+                Err(format!("{}: no such file or directory", name))
             }
         }
         None => {

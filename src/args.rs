@@ -1,5 +1,5 @@
 /// Types to parse the command line arguments with the clap crate.
-use crate::{header, positive_less_than_32, string_no_empty, string_script, Verbosity};
+use crate::{Verbosity, header, positive_less_than_32, string_no_empty, string_script};
 use clap::{Parser, Subcommand, ValueEnum};
 use std::cmp::Ord;
 
@@ -27,6 +27,10 @@ pub struct Args {
     /// Don't check model consistency - warning: may produce invalid Compose output
     #[arg(long, conflicts_with = "no_docker")]
     pub no_consistency: bool,
+
+    /// Don't interpolate environment variables
+    #[arg(long, conflicts_with = "no_docker")]
+    pub no_interpolate: bool,
 }
 
 impl Args {
@@ -62,7 +66,7 @@ pub enum Commands {
         tag: Option<String>,
         /// use with --tag to filter which images should be checked whether the
         /// tag exists or not locally or remotely.
-        /// Currently only regex=EXPR or regex!=EXPR are supported
+        /// Currently only regex=EXPR or regex!=EXPR (invert match) are supported
         #[arg(long, value_name = "FILTER", requires("tag"), value_parser = string_no_empty)]
         tag_filter: Option<String>,
         /// ignore unauthorized errors from docker when fetching remote tags info
@@ -95,7 +99,7 @@ pub enum Commands {
         text: Option<String>,
     },
 
-    /// Download a file from an HTTP URL, if the resource doesn't exist, fallback
+    /// Download a file from an HTTP URL. If the resource doesn't exist, fallback
     /// to another URL generated editing the URL given with a script provided in the
     /// form of "text-to-replace:replacer".
     Get {
@@ -106,7 +110,7 @@ pub enum Commands {
         /// replacing any occurrence of the left part of the script with the right
         /// part. Each part of the script has to be separated with the symbol `:`.
         /// E.g. `pose get https://server.com/repo/feature-a/compose.yml feature-a:master`
-        /// will try first download the resource from https://server.com/repo/feature-a/compose.yml,
+        /// will try to first download the resource from https://server.com/repo/feature-a/compose.yml,
         /// if not found, will try at https://server.com/repo/master/compose.yml
         #[arg(value_parser = string_script)]
         script: Option<(String, String)>,
@@ -115,8 +119,8 @@ pub enum Commands {
         output: Option<String>,
         /// Maximum time in seconds that you allow pose's connection to take.
         /// This only limits the connection phase, so if pose connects within the
-        /// given period it will continue, if not it will exit with error.
-        #[arg(long, value_name = "SECONDS", default_value_t = 30)]
+        /// given period, it will continue, if not, it will exit with error.
+        #[arg(long, value_name = "SECONDS", default_value_t = 10)]
         timeout_connect: u16,
         /// Maximum time in seconds that you allow the whole operation to take.
         #[arg(short, long, value_name = "SECONDS", default_value_t = 300)]
@@ -130,7 +134,11 @@ pub enum Commands {
 #[derive(Subcommand, strum_macros::Display, PartialEq)]
 pub enum Objects {
     /// List services
-    Services,
+    Services {
+        /// filter by a property, currently only tag=TAG is supported
+        #[arg(short, long)]
+        filter: Option<String>,
+    },
     /// List images
     Images {
         /// filter by a property, if --tag is used as well,
@@ -165,8 +173,16 @@ pub enum Objects {
         #[arg(long, value_name = "NUM", default_value_t = 8, value_parser = positive_less_than_32, requires("tag"))]
         threads: u8,
     },
-    /// List service's depends_on
-    Depends { service: String },
+    /// List service's depends_on services
+    Depends {
+        #[arg(required = true)]
+        services: Vec<String>,
+    },
+    /// List services that are dependants of the given services
+    Dependents {
+        #[arg(required = true)]
+        services: Vec<String>,
+    },
     /// List volumes
     Volumes,
     /// List networks

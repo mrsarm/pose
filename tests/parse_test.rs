@@ -32,6 +32,40 @@ volumes:
 }
 
 #[test]
+fn get_services_list_filter_by_image_tag() -> Result<(), Error> {
+    let yaml = "
+services:
+  app: the-app
+  app1:
+    image: some-image
+    ports:
+      - 8000:8000
+  app2:
+    image: another-image:2.0
+    ports:
+      - 9000:9000
+  app3:
+    image: another-image:2.0.1
+    ports:
+      - 9001:9001
+    depends_on:
+      - app2
+  app4:
+    image: me:2.0
+    ports:
+      - 9003:9003
+
+volumes:
+  - no-body-cares
+    ";
+    let compose = ComposeYaml::new(&yaml)?;
+    let services = compose.filter_services_by_image_tag("2.0");
+    let services_names = services.iter().map(|e| e.0.as_str()).collect::<Vec<_>>();
+    assert_eq!(services_names, vec!["app2", "app4"]);
+    Ok(())
+}
+
+#[test]
 fn get_services_empty_list() -> Result<(), Error> {
     let yaml = "
 services: []
@@ -341,6 +375,125 @@ services:
     assert_eq!(
         depends_on.unwrap_or(Vec::default()),
         vec!["postgres", "app"]
+    );
+    Ok(())
+}
+
+#[test]
+fn get_service_dependants() -> Result<(), Error> {
+    let yaml = r#"
+services:
+  app:
+    image: the-app
+    depends_on:
+      - x
+  postgres:
+    image: postgres
+  app1:
+    image: some-image
+    ports:
+      - 8000:8000
+    depends_on:
+      - postgres
+      - app
+    "#;
+    let compose = ComposeYaml::new(&yaml)?;
+    let services = vec!["app".to_string()];
+    let depends_on = compose.get_services_dependants(&services);
+    assert_eq!(depends_on.unwrap_or(Vec::default()), vec!["app1"]);
+    Ok(())
+}
+
+#[test]
+fn get_service_dependants_expanded() -> Result<(), Error> {
+    let yaml = r#"
+services:
+  app:
+    image: the-app
+    depends_on:
+      - x
+  postgres:
+    image: postgres
+  app1:
+    image: some-image
+    ports:
+      - 8000:8000
+    depends_on:
+      - postgres
+      - app
+  app2:
+    image: some-image-2:dev
+    ports:
+      - 8001:8001
+    depends_on:
+      app:
+        condition: service_started
+      postgres:
+        condition: service_started
+    "#;
+    let compose = ComposeYaml::new(&yaml)?;
+    let services = vec!["app".to_string()];
+    let depends_on = compose.get_services_dependants(&services);
+    assert_eq!(depends_on.unwrap_or(Vec::default()), vec!["app1", "app2"]);
+    Ok(())
+}
+
+#[test]
+fn get_services_depends() -> Result<(), Error> {
+    let yaml = r#"
+services:
+  app:
+    image: the-app
+    depends_on:
+      - x
+  postgres:
+    image: postgres
+  app1:
+    image: some-image
+    ports:
+      - 8000:8000
+    depends_on:
+      - postgres
+      - app
+    "#;
+    let compose = ComposeYaml::new(&yaml)?;
+    let services = vec!["app".to_string(), "app1".to_string()];
+    let all_deps_op = compose.get_services_depends_on(&services);
+    assert_eq!(
+        all_deps_op,
+        Ok(vec!["postgres".to_string(), "x".to_string()])
+    );
+    Ok(())
+}
+
+#[test]
+fn get_services_depends_not_found() -> Result<(), Error> {
+    let yaml = r#"
+services:
+  app:
+    image: the-app
+    depends_on:
+      - x
+  postgres:
+    image: postgres
+  app1:
+    image: some-image
+    ports:
+      - 8000:8000
+    depends_on:
+      - postgres
+      - app
+    "#;
+    let compose = ComposeYaml::new(&yaml)?;
+    let services = vec![
+        "app".to_string(),
+        "dont_exist1".to_string(),
+        "dont_exist2".to_string(),
+    ];
+    let all_deps_op = compose.get_services_depends_on(&services);
+    assert_eq!(
+        all_deps_op,
+        Err(vec!["dont_exist1".to_string(), "dont_exist2".to_string()])
     );
     Ok(())
 }

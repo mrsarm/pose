@@ -65,14 +65,17 @@ impl DockerCommand {
         &self,
         filenames: &[&str],
         no_consistency: bool,
+        no_interpolate: bool,
         output_stdout: bool,
         output_stderr: bool,
     ) -> io::Result<Output> {
         let mut cmd_args = Vec::new();
-        cmd_args.push("--no-interpolate");
         cmd_args.push("--no-normalize");
         if no_consistency {
             cmd_args.push("--no-consistency");
+        }
+        if no_interpolate {
+            cmd_args.push("--no-interpolate");
         }
         self.call_compose_cmd(
             "config",

@@ -29,11 +29,11 @@ fn run_docker_compose_version() {
 #[serial]
 #[ignore] // because issues in CI so disabled for now
 fn run_missed_docker() {
-    env::set_var("DOCKER_BIN", "docker1234");
+    unsafe { env::set_var("DOCKER_BIN", "docker1234") }
     let command = DockerCommand::new(Verbosity::default());
     let result = command.call_cmd(&["version"], false, false);
     assert!(result.is_err()); // the message vary according to the OS
-    env::set_var("DOCKER_BIN", "docker");
+    unsafe { env::set_var("DOCKER_BIN", "docker") }
 }
 
 #[test]
@@ -66,6 +66,7 @@ fn run_docker_config_multiple_files() {
             &["tests/compose.yaml", "tests/another.yml"],
             false,
             false,
+            false,
             true,
         )
         .unwrap();
@@ -83,7 +84,7 @@ fn run_docker_config_multiple_files() {
 fn run_docker_config_file_not_found() {
     let command = DockerCommand::new(Verbose);
     let output = command
-        .call_compose_config(&["does-not-exist.yml"], false, false, true)
+        .call_compose_config(&["does-not-exist.yml"], false, false, false, true)
         .unwrap();
     assert!(!output.status.success());
     let stderr = String::from_utf8(output.stderr).unwrap();
