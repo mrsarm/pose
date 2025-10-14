@@ -8,7 +8,7 @@ license = "GPL-3.0"
 readme = "README.md"
 homepage = "https://github.com/mrsarm/pose"
 repository = "https://github.com/mrsarm/pose"
-categories = ["docker", "command-line-interface"]
+categories = ["development-tools", "command-line-interface"]
 
 [dependencies]
 clap = { version = "4.5", features = ["derive", "cargo"] }
